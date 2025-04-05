@@ -1,14 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./HomePage.css";
 import logoImg from "../assets/Y.png";
 import basketImg from "../assets/basket.png";
 import LoginModal from "./LoginModal";
 import RegisterModal from "./RegisterModal";
+import { auth } from "../firebase";
+import { signOut } from "firebase/auth";
 
-export default function HomePage() {
+export default function HomePage({ currentUser, authError }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('haftalik'); // Varsayılan olarak haftalık seçili
+  
+  // Sayfa yüklendiğinde hata varsa Login modalını göster
+  useEffect(() => {
+    if (authError) {
+      console.log("Auth hatası nedeniyle login modal açılıyor:", authError);
+      setShowLoginModal(true);
+    }
+  }, [authError]);
   
   // Giriş Yap modalını gösterme fonksiyonu
   const openLoginModal = () => {
@@ -26,6 +36,15 @@ export default function HomePage() {
   const closeModals = () => {
     setShowLoginModal(false);
     setShowRegisterModal(false);
+  };
+  
+  // Çıkış yapma fonksiyonu
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Çıkış yaparken hata oluştu:", error);
+    }
   };
   
   return (
@@ -57,18 +76,32 @@ export default function HomePage() {
         </div>
         
         <div className="nav-right">
-          <button 
-            className="btn login-btn" 
-            onClick={openLoginModal}
-          >
-            Giriş Yap
-          </button>
-          <button 
-            className="btn register-btn" 
-            onClick={openRegisterModal}
-          >
-            Kayıt Ol
-          </button>
+          {currentUser ? (
+            <div className="user-menu">
+              <span className="user-email">{currentUser.email}</span>
+              <button 
+                className="btn logout-btn" 
+                onClick={handleLogout}
+              >
+                Çıkış Yap
+              </button>
+            </div>
+          ) : (
+            <>
+              <button 
+                className="btn login-btn" 
+                onClick={openLoginModal}
+              >
+                Giriş Yap
+              </button>
+              <button 
+                className="btn register-btn" 
+                onClick={openRegisterModal}
+              >
+                Kayıt Ol
+              </button>
+            </>
+          )}
           <img src={basketImg} alt="Sepet" className="basket-icon" />
         </div>
       </header>
@@ -95,7 +128,8 @@ export default function HomePage() {
       {showLoginModal && (
         <LoginModal 
           onClose={closeModals} 
-          onRegisterClick={openRegisterModal} 
+          onRegisterClick={openRegisterModal}
+          authError={authError}
         />
       )}
       

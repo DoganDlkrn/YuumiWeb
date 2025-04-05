@@ -143,6 +143,32 @@ html, body {
   gap: 25px; /* Butonlar arasındaki mesafeyi artır */
 }
 
+/* Kullanıcı menüsü */
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-email {
+  font-size: 14px;
+  color: #333;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logout-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.logout-btn:hover {
+  background-color: #d32f2f;
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.4);
+}
+
 /* Sepet ikonu */
 .basket-icon {
   width: 28px;

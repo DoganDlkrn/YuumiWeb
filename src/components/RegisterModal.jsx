@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "./LoginModal.css"; // Aynı stil dosyasını kullanabiliriz
 import { auth } from "../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import turkeyFlag from "../assets/turkey_flag.png"; // Türk bayrağı import
 
 export default function RegisterModal({ onClose, onLoginClick }) {
   const [name, setName] = useState("");
@@ -11,6 +12,7 @@ export default function RegisterModal({ onClose, onLoginClick }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   // Kayıt işlemi
   const handleRegister = async (e) => {
@@ -57,6 +59,37 @@ export default function RegisterModal({ onClose, onLoginClick }) {
     }
   };
   
+  // Telefon formatını düzenleme
+  const formatPhoneNumber = (input) => {
+    // Sadece rakamları al
+    const numbers = input.replace(/\D/g, '');
+    
+    // Maksimum 10 rakam
+    const limitedNumbers = numbers.slice(0, 10);
+    
+    // Formatla: XXX XXX XX XX
+    let formatted = '';
+    for (let i = 0; i < limitedNumbers.length; i++) {
+      // Boşluk ekle: 3. rakamdan sonra, 6. rakamdan sonra ve 8. rakamdan sonra
+      if (i === 3 || i === 6 || i === 8) {
+        formatted += ' ';
+      }
+      formatted += limitedNumbers[i];
+    }
+    
+    return formatted;
+  };
+
+  const handlePhoneChange = (e) => {
+    const formattedPhone = formatPhoneNumber(e.target.value);
+    setPhone(formattedPhone);
+  };
+  
+  // Şifre görünürlüğünü değiştir
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+  
   return (
     <div className="modal-overlay">
       <div className="login-modal">
@@ -64,7 +97,7 @@ export default function RegisterModal({ onClose, onLoginClick }) {
           ✕
         </button>
         
-        <h2>Üye Ol</h2>
+        <h2>Kayıt Ol</h2>
         <p>Hemen üye ol ve avantajlardan yararlan</p>
         
         {error && <div className="auth-error">{error}</div>}
@@ -84,18 +117,38 @@ export default function RegisterModal({ onClose, onLoginClick }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <input 
-              type="password" 
-              placeholder="Şifre" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <input 
-              type="tel" 
-              placeholder="Telefon Numarası" 
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
+            
+            <div className="password-input-container">
+              <input 
+                type={showPassword ? "text" : "password"}
+                placeholder="Şifre" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button 
+                type="button"
+                className="password-toggle" 
+                onClick={togglePasswordVisibility}
+                tabIndex="-1"
+                aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+              >
+                <div className={showPassword ? "eye-open" : "eye-closed"}></div>
+              </button>
+            </div>
+            
+            <div className="phone-input-container">
+              <div className="country-code">
+                <img src={turkeyFlag} alt="Turkey" className="country-flag" />
+                <span>+90</span>
+              </div>
+              <input 
+                type="tel" 
+                placeholder="Telefon Numarası" 
+                value={phone}
+                onChange={handlePhoneChange}
+                className="phone-input"
+              />
+            </div>
           </div>
           
           <button 

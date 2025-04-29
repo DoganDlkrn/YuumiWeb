@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./HomePage.css";
 import logoImg from "../assets/Y.png";
 import basketImg from "../assets/basket.png";
@@ -11,6 +11,8 @@ export default function HomePage({ currentUser, authError }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('haftalik'); // Varsayılan olarak haftalık seçili
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
   
   // Sayfa yüklendiğinde hata varsa Login modalını göster
   useEffect(() => {
@@ -19,6 +21,20 @@ export default function HomePage({ currentUser, authError }) {
       setShowLoginModal(true);
     }
   }, [authError]);
+  
+  // Menü dışında bir yere tıklandığında profil menüsünü kapat
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [profileMenuRef]);
   
   // Giriş Yap modalını gösterme fonksiyonu
   const openLoginModal = () => {
@@ -38,21 +54,48 @@ export default function HomePage({ currentUser, authError }) {
     setShowRegisterModal(false);
   };
   
+  // Profil menüsünü aç/kapat
+  const toggleProfileMenu = () => {
+    setShowProfileMenu(!showProfileMenu);
+  };
+  
   // Çıkış yapma fonksiyonu
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      setShowProfileMenu(false);
     } catch (error) {
       console.error("Çıkış yaparken hata oluştu:", error);
     }
+  };
+  
+  // Kullanıcının adını döndüren yardımcı fonksiyon
+  const getUserDisplayName = () => {
+    if (currentUser) {
+      if (currentUser.displayName) {
+        return currentUser.displayName;
+      } else {
+        // E-posta adresinden kullanıcı adını çıkar (@ işaretinden önceki kısım)
+        return currentUser.email.split('@')[0];
+      }
+    }
+    return "";
+  };
+  
+  // Telefon numarasını formatla
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return "";
+    return phone;
   };
   
   return (
     <div className="homepage">
       <header className="navbar">
         <div className="nav-left">
-          <img src={logoImg} alt="Yuumi Logo" className="logo" />
-          <span className="brand">Yuumi</span>
+          <a href="/" className="logo-link">
+            <img src={logoImg} alt="Yuumi Logo" className="logo" />
+            <span className="brand">Yuumi</span>
+          </a>
         </div>
         
         {/* Navbar içinde kategori sekmeleri */}
@@ -77,14 +120,33 @@ export default function HomePage({ currentUser, authError }) {
         
         <div className="nav-right">
           {currentUser ? (
-            <div className="user-menu">
-              <span className="user-email">{currentUser.email}</span>
-              <button 
-                className="btn logout-btn" 
-                onClick={handleLogout}
-              >
-                Çıkış Yap
+            <div className="profile-container" ref={profileMenuRef}>
+              <button className="profile-button" onClick={toggleProfileMenu}>
+                <div className="profile-icon"></div>
+                <span className="user-name">{getUserDisplayName()}</span>
               </button>
+              
+              {showProfileMenu && (
+                <div className="profile-dropdown">
+                  <div className="profile-header">
+                    <div className="profile-info">
+                      <p className="profile-name">{getUserDisplayName()}</p>
+                      <p className="profile-email">{currentUser.email}</p>
+                      {currentUser.phoneNumber && (
+                        <p className="profile-phone">{formatPhoneNumber(currentUser.phoneNumber)}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <ul className="profile-menu-items">
+                    <li><button className="profile-menu-item"><div className="item-icon address-icon"></div>Adreslerim</button></li>
+                    <li><button className="profile-menu-item"><div className="item-icon orders-icon"></div>Geçmiş Siparişlerim</button></li>
+                    <li><button className="profile-menu-item"><div className="item-icon payment-icon"></div>Ödeme Yöntemlerim</button></li>
+                    <li><button className="profile-menu-item"><div className="item-icon contact-icon"></div>İletişim Tercihlerim</button></li>
+                    <li><button className="profile-menu-item logout-item" onClick={handleLogout}><div className="item-icon logout-icon"></div>Çıkış Yap</button></li>
+                  </ul>
+                </div>
+              )}
             </div>
           ) : (
             <>

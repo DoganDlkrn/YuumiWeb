@@ -207,7 +207,6 @@
   border-radius: 8px;
   background-color: #f5f5f5;
   overflow: hidden;
-  box-shadow: none;
 }
 
 .country-code {
@@ -300,7 +299,7 @@
 }
 
 .eye-closed {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24'%3E%3C/path%3E%3Cline x1='1' y1='1' x2='23' y2='23'%3E%3C/line%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.5 3.75L19.5 20.25' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M14.5219 14.7753C13.8338 15.4055 12.9333 15.7536 12 15.7497C11.0172 15.7497 10.0697 15.3486 9.37985 14.6349C8.69 13.9212 8.30469 12.953 8.30469 11.9497C8.302 11.0016 8.66089 10.0889 9.30483 9.39368' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M6.9375 6.43286C3.1125 8.36411 1.5 12 1.5 12C1.5 12 4.5 18.7498 12 18.7498C14.0588 18.7686 16.0744 18.1757 17.8125 17.0326' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M19.5563 15.5543C21.6 13.9999 22.5 11.9999 22.5 11.9999C22.5 11.9999 19.5 5.25012 12 5.25012C11.3498 5.24903 10.7006 5.30929 10.0594 5.43054' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M12.7406 8.31619C13.5006 8.47086 14.1649 8.88361 14.6147 9.47921C15.0645 10.0748 15.2698 10.8097 15.1929 11.5422' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 /* Logo that behaves as a link but has no hover effects */
@@ -370,4 +369,44 @@
 .auth-input-group input:focus {
   outline: 2px solid #00B2FF;
   box-shadow: 0 0 0 2px rgba(0, 178, 255, 0.2);
+}
+
+/* Name input container styles */
+.name-input-container {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.name-input {
+  flex: 1;
+  width: 50%;
+}
+
+/* Auth separator styles for "ya da" (or) text */
+.auth-separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 15px 0;
+  color: #666;
+}
+
+.auth-separator::before,
+.auth-separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #ddd;
+}
+
+.auth-separator span {
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+/* Google logo styles */
+.google-logo {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
 }

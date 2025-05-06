@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import "./LoginModal.css"; // Aynı stil dosyasını kullanabiliriz
 import { auth } from "../firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import turkeyFlag from "../assets/turkey_flag.png"; // Türk bayrağı import
+import googleLogo from "../assets/google.png"; // Google logosu için
 
 export default function RegisterModal({ onClose, onLoginClick }) {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,7 +21,7 @@ export default function RegisterModal({ onClose, onLoginClick }) {
   const handleRegister = async (e) => {
     e.preventDefault();
     
-    if (!name || !email || !password) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       setError("Lütfen zorunlu alanları doldurunuz.");
       return;
     }
@@ -28,12 +31,26 @@ export default function RegisterModal({ onClose, onLoginClick }) {
       return;
     }
     
+    if (password !== confirmPassword) {
+      setError("Şifreler eşleşmiyor.");
+      return;
+    }
+    
     try {
       setLoading(true);
       setError("");
       
       // Firebase ile kullanıcı oluşturma
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Kullanıcı profilini güncelle (ad, soyad, telefon)
+      await userCredential.user.updateProfile({
+        displayName: `${firstName} ${lastName}`
+      });
+      
+      // Ekstra bilgileri veritabanına kaydedebiliriz (telefon gibi)
+      // Firestore kullanılıyorsa buraya ekleme yapılabilir
+      
       console.log("Kullanıcı başarıyla oluşturuldu:", userCredential.user.email);
       
       // Başarılı kayıt
@@ -53,6 +70,42 @@ export default function RegisterModal({ onClose, onLoginClick }) {
         setError("Şifre çok zayıf.");
       } else {
         setError("Kayıt sırasında bir hata oluştu: " + error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Google ile kayıt işlemi
+  const handleGoogleRegister = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      
+      const provider = new GoogleAuthProvider();
+      
+      // Kapsamları sınırlandırıp sadece gerekli olanları isteyelim
+      provider.addScope('email');
+      provider.addScope('profile');
+      
+      // Firebase web API ile tarayıcıyı kontrol etme
+      provider.setCustomParameters({
+        prompt: 'select_account', // Her zaman hesap seçtir
+      });
+      
+      // Popup kullanarak Google ile giriş yapalım
+      const result = await signInWithPopup(auth, provider);
+      onClose(); // Başarılı giriş sonrası modalı kapat
+      
+    } catch (error) {
+      console.error("Google kayıt hatası:", error.code, error.message);
+      
+      if (error.code === 'auth/unauthorized-domain') {
+        setError("Bu domain Google ile kayıt için yetkilendirilmemiş.");
+      } else if (error.code?.includes('api-key')) {
+        setError("API anahtarı hatası. Lütfen e-posta/şifre ile kayıt olun.");
+      } else {
+        setError(`Google ile kayıt yapılamadı: ${error.message || "Bilinmeyen hata"}`);
       }
     } finally {
       setLoading(false);
@@ -105,18 +158,43 @@ export default function RegisterModal({ onClose, onLoginClick }) {
         
         <form onSubmit={handleRegister} className="auth-options">
           <div className="auth-input-group">
-            <input 
-              type="text" 
-              placeholder="Ad Soyad" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <div className="name-input-container">
+              <input 
+                type="text" 
+                placeholder="Ad" 
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="name-input"
+              />
+              <input 
+                type="text" 
+                placeholder="Soyad" 
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="name-input"
+              />
+            </div>
+            
             <input 
               type="email" 
               placeholder="E-posta" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+            
+            <div className="phone-input-container">
+              <div className="country-code">
+                <img src={turkeyFlag} alt="Turkey" className="country-flag" />
+                <span>+90</span>
+              </div>
+              <input 
+                type="tel" 
+                placeholder="Telefon Numarası" 
+                value={phone}
+                onChange={handlePhoneChange}
+                className="phone-input"
+              />
+            </div>
             
             <div className="password-input-container">
               <input 
@@ -136,19 +214,12 @@ export default function RegisterModal({ onClose, onLoginClick }) {
               </button>
             </div>
             
-            <div className="phone-input-container">
-              <div className="country-code">
-                <img src={turkeyFlag} alt="Turkey" className="country-flag" />
-                <span>+90</span>
-              </div>
-              <input 
-                type="tel" 
-                placeholder="Telefon Numarası" 
-                value={phone}
-                onChange={handlePhoneChange}
-                className="phone-input"
-              />
-            </div>
+            <input 
+              type={showPassword ? "text" : "password"}
+              placeholder="Şifre Tekrar" 
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
           </div>
           
           <button 
@@ -157,6 +228,20 @@ export default function RegisterModal({ onClose, onLoginClick }) {
             disabled={loading}
           >
             {loading ? "Kayıt olunuyor..." : "Kayıt Ol"}
+          </button>
+          
+          <div className="auth-separator">
+            <span>ya da</span>
+          </div>
+          
+          <button 
+            type="button"
+            className="auth-button google-button"
+            onClick={handleGoogleRegister}
+            disabled={loading}
+          >
+            <img src={googleLogo} alt="Google" className="google-logo" />
+            Google ile giriş yap
           </button>
           
           <div className="auth-footer">

@@ -1,6 +1,7 @@
 // Firebase yapılandırma
 import { initializeApp } from "firebase/app";
 import { getAuth, browserLocalPersistence, setPersistence } from "firebase/auth";
+import { getFirestore } from "firebase/firestore"; // Import Firestore
 
 // Firebase yapılandırma bilgileri - tam versiyon
 const firebaseConfig = {
@@ -18,6 +19,9 @@ const app = initializeApp(firebaseConfig);
 // Auth servisini özel yapılandırma ile oluştur
 const auth = getAuth();
 
+// Firestore veritabanını başlat
+const db = getFirestore(app);
+
 // Auth dili ayarları
 auth.useDeviceLanguage();
 
@@ -30,5 +34,5 @@ if (process.env.NODE_ENV === 'development') {
   auth.settings.appVerificationDisabledForTesting = true;
 }
 
-// Authentication servisini dışa aktar
-export { auth }; 
+// Authentication ve Firestore servislerini dışa aktar
+export { auth, db }; 

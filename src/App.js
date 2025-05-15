@@ -37,6 +37,7 @@ function App() {
         <Route path="/iletisim-tercihlerim" element={<HomePage currentUser={currentUser} authError={authError} />} />
         <Route path="/hesabim" element={<HomePage currentUser={currentUser} authError={authError} />} />
         <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+        <Route path="/restaurant/:id/menu" element={<RestaurantDetail initialTab="menu" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

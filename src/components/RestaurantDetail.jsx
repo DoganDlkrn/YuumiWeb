@@ -4,130 +4,117 @@ import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import './RestaurantDetail.css';
 
-export default function RestaurantDetail() {
+export default function RestaurantDetail({ initialTab = 'info' }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [restaurant, setRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState(null);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [cart, setCart] = useState([]);
   const [cartTotal, setCartTotal] = useState(0);
   const [showAddedAnimation, setShowAddedAnimation] = useState(null);
   const [showCartPreview, setShowCartPreview] = useState(false);
 
+  // Set active tab based on initialTab prop
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
   useEffect(() => {
     const fetchRestaurantData = async () => {
       try {
         setLoading(true);
+        console.log("Restoran verisi çekiliyor:", id);
+        
         const docRef = doc(db, "restaurants", id);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
           const data = { id: docSnap.id, ...docSnap.data() };
+          console.log("Firebase'den çekilen restoran verisi:", data);
           
-          // If there's no menu in the data, try to fetch it from a subcollection
-          if (!data.menu && !data.menuItems) {
+          // Menü verilerini işle
+          if (!data.menu) {
+            data.menu = [];
+            
+            // Menü alt koleksiyonunu kontrol et
+            try {
             const menuSnapshot = await getDocs(collection(db, "restaurants", id, "menu"));
+              
+              if (!menuSnapshot.empty) {
             const menuItems = menuSnapshot.docs.map(doc => ({
               id: doc.id,
               ...doc.data()
             }));
             data.menu = menuItems;
+                console.log("Menü alt koleksiyonundan çekildi:", menuItems);
+              } else {
+                // Menü alanını kontrol et (Firebase'deki yapıya göre)
+                console.log("Menü alt koleksiyonu bulunamadı, belge içindeki menü alanını kontrol ediyorum");
+                
+                // Nested menü yapısı kontrolü
+                if (data.menu && typeof data.menu === 'object' && !Array.isArray(data.menu)) {
+                  const menuItems = [];
+                  
+                  // Kategori gruplarını dön
+                  Object.keys(data.menu).forEach(categoryKey => {
+                    const category = data.menu[categoryKey];
+                    
+                    // Her kategori içindeki menü öğelerini dön
+                    if (typeof category === 'object') {
+                      Object.keys(category).forEach(itemKey => {
+                        const item = category[itemKey];
+                        
+                        // Geçerli bir menü öğesi mi kontrol et
+                        if (item && typeof item === 'object' && item.isim && (item.fiyat || item.fiyat === 0)) {
+                          // Kategori adını belirle
+                          let kategoriAdi;
+                          if (categoryKey === '0') {
+                            kategoriAdi = 'Pizzalar';
+                          } else if (categoryKey === '1') {
+                            kategoriAdi = 'Makarnalar';
+                          } else if (item.kategori) {
+                            kategoriAdi = item.kategori;
+                          } else {
+                            kategoriAdi = 'Diğer';
+                          }
+                          
+                          menuItems.push({
+                            id: itemKey,
+                            kategori: kategoriAdi,
+                            ...item
+                          });
+                        }
+                      });
+                    }
+                  });
+                  
+                  data.menu = menuItems;
+                  console.log("Nested menü yapısından çekildi:", menuItems);
+                }
+              }
+            } catch (error) {
+              console.error("Menü verisi çekilirken hata:", error);
+            }
           }
           
           setRestaurant(data);
           
-          // Set the default active category
+          // Varsayılan aktif kategoriyi ayarla
           if (data.menu && data.menu.length > 0) {
-            const categories = getCategories(data);
-            setActiveCategory(categories[0]);
-          } else if (data.menuItems && data.menuItems.length > 0) {
             const categories = getCategories(data);
             setActiveCategory(categories[0]);
           }
         } else {
-          console.log("No such restaurant!");
-          // Create a default restaurant for demo purposes
-          createDemoRestaurant();
+          console.log("Restoran bulunamadı!");
+          setRestaurant(null);
         }
       } catch (error) {
-        console.error("Error fetching restaurant data:", error);
-        // Create a default restaurant in case of error
-        createDemoRestaurant();
+        console.error("Restoran verisi çekilirken hata:", error);
+        setRestaurant(null);
       } finally {
         setLoading(false);
-      }
-    };
-
-    // Create a demo restaurant with menu for testing
-    const createDemoRestaurant = () => {
-      const demoRestaurant = {
-        id: "demo-restaurant",
-        isim: "Elazığ Sofrası",
-        kategori: "Ev Yemekleri & Yöresel",
-        puan: "4.7",
-        teslimatSuresi: "25-40 dk",
-        adres: "İzzetpaşa Mah. Hürriyet Cad. No: 5, Merkez/Elazığ",
-        calismaSaatleri: "08:00 - 20:00",
-        menu: [
-          {
-            id: "es_01",
-            isim: "Günün Çorbası",
-            aciklama: "Yanında pilav ile",
-            fiyat: 25,
-            kategori: "Ana Yemekler"
-          },
-          {
-            id: "es_02",
-            isim: "Kuru Fasulye",
-            aciklama: "Yanında pilav ile",
-            fiyat: 55,
-            kategori: "Ana Yemekler"
-          },
-          {
-            id: "es_03",
-            isim: "İçli Köfte (Adet)",
-            aciklama: "Elazığ usulü",
-            fiyat: 25,
-            kategori: "Ana Yemekler"
-          },
-          {
-            id: "es_04",
-            isim: "Harput Köfte",
-            aciklama: "Elazığ'ın meşhur köftesi",
-            fiyat: 65,
-            kategori: "Ana Yemekler"
-          },
-          {
-            id: "es_05",
-            isim: "Ayran",
-            aciklama: "Ev yapımı ayran",
-            fiyat: 15,
-            kategori: "İçecekler"
-          },
-          {
-            id: "es_06",
-            isim: "Sütlaç",
-            aciklama: "Fırında sütlaç",
-            fiyat: 35,
-            kategori: "Tatlılar"
-          },
-          {
-            id: "es_07",
-            isim: "Kadayıf",
-            aciklama: "Cevizli kadayıf",
-            fiyat: 45,
-            kategori: "Tatlılar"
-          }
-        ]
-      };
-      
-      setRestaurant(demoRestaurant);
-      
-      // Set the default active category
-      if (demoRestaurant.menu && demoRestaurant.menu.length > 0) {
-        const categories = getCategories(demoRestaurant);
-        setActiveCategory(categories[0]);
       }
     };
 
@@ -136,7 +123,7 @@ export default function RestaurantDetail() {
     }
   }, [id]);
 
-  // Calculate cart total when cart changes
+  // Sepet toplamını hesapla
   useEffect(() => {
     const total = cart.reduce((sum, item) => sum + (item.fiyat * item.quantity), 0);
     setCartTotal(total);
@@ -146,24 +133,24 @@ export default function RestaurantDetail() {
     navigate(-1);
   };
 
-  // Function to get unique categories from the menu
+  // Menüden kategorileri al
   const getCategories = (restaurantData) => {
-    if (restaurantData.menu) {
+    if (restaurantData.menu && restaurantData.menu.length > 0) {
       return [...new Set(restaurantData.menu.map(item => item.kategori))];
-    } else if (restaurantData.menuItems) {
+    } else if (restaurantData.menuItems && restaurantData.menuItems.length > 0) {
       return [...new Set(restaurantData.menuItems.map(item => item.kategori))];
     }
-    return ["Ana Yemekler", "Tatlılar", "İçecekler"];
+    return [];
   };
 
-  // Add item to cart
+  // Sepete ürün ekle
   const addToCart = (item) => {
     setCart(prevCart => {
-      // Check if item is already in cart
+      // Ürün sepette var mı kontrol et
       const existingItemIndex = prevCart.findIndex(cartItem => cartItem.id === item.id);
       
       if (existingItemIndex >= 0) {
-        // Update quantity if item exists
+        // Varsa miktarı güncelle
         const updatedCart = [...prevCart];
         updatedCart[existingItemIndex] = {
           ...updatedCart[existingItemIndex],
@@ -171,17 +158,17 @@ export default function RestaurantDetail() {
         };
         return updatedCart;
       } else {
-        // Add new item with quantity 1
+        // Yoksa yeni ekle
         return [...prevCart, { ...item, quantity: 1 }];
       }
     });
     
-    // Show added animation
+    // Eklendi animasyonu göster
     setShowAddedAnimation(item.id);
     setTimeout(() => setShowAddedAnimation(null), 500);
   };
 
-  // Remove item from cart
+  // Sepetten ürün çıkar
   const removeFromCart = (itemId) => {
     setCart(prevCart => {
       const existingItemIndex = prevCart.findIndex(item => item.id === itemId);
@@ -189,13 +176,13 @@ export default function RestaurantDetail() {
       if (existingItemIndex >= 0) {
         const updatedCart = [...prevCart];
         if (updatedCart[existingItemIndex].quantity > 1) {
-          // Decrease quantity
+          // Miktarı azalt
           updatedCart[existingItemIndex] = {
             ...updatedCart[existingItemIndex],
             quantity: updatedCart[existingItemIndex].quantity - 1
           };
         } else {
-          // Remove item if quantity is 1
+          // Ürünü kaldır
           updatedCart.splice(existingItemIndex, 1);
         }
         return updatedCart;
@@ -204,25 +191,25 @@ export default function RestaurantDetail() {
     });
   };
 
-  // Get item quantity in cart
+  // Sepetteki ürün miktarını al
   const getItemQuantity = (itemId) => {
     const item = cart.find(item => item.id === itemId);
     return item ? item.quantity : 0;
   };
 
-  // Clear cart
+  // Sepeti temizle
   const clearCart = () => {
     setCart([]);
   };
 
-  // Proceed to checkout
+  // Siparişi tamamla
   const proceedToCheckout = () => {
-    // For now, just display a success message
+    // Şimdilik bir başarı mesajı göster
     alert('Siparişiniz alındı! Sipariş tutarı: ₺' + cartTotal.toFixed(2));
     clearCart();
   };
 
-  // Toggle cart preview
+  // Sepet önizlemesini aç/kapat
   const toggleCartPreview = () => {
     setShowCartPreview(!showCartPreview);
   };
@@ -244,17 +231,16 @@ export default function RestaurantDetail() {
     );
   }
 
-  // Group menu items by category
+  // Menü öğelerini kategorilere göre grupla
   const menuByCategory = {};
-  if (restaurant.menu) {
+  if (restaurant.menu && restaurant.menu.length > 0) {
     restaurant.menu.forEach(item => {
       if (!menuByCategory[item.kategori]) {
         menuByCategory[item.kategori] = [];
       }
       menuByCategory[item.kategori].push(item);
     });
-  } else if (restaurant.menuItems) {
-    // Support for alternative menu structure
+  } else if (restaurant.menuItems && restaurant.menuItems.length > 0) {
     restaurant.menuItems.forEach(item => {
       if (!menuByCategory[item.kategori]) {
         menuByCategory[item.kategori] = [];
@@ -263,7 +249,7 @@ export default function RestaurantDetail() {
     });
   }
 
-  // Get all categories
+  // Tüm kategorileri al
   const categories = getCategories(restaurant);
 
   return (
@@ -281,11 +267,13 @@ export default function RestaurantDetail() {
             <span className="delivery-fee">Ücretsiz Teslimat</span>
           </div>
           <p className="restaurant-address">{restaurant.adres}</p>
-          <p className="restaurant-hours">{restaurant.calismaSaatleri}</p>
+          <p className="restaurant-hours">{restaurant.calismaSaatleri || restaurant.calismaSaatleri1}</p>
         </div>
       </div>
 
       <div className="restaurant-content">
+        {categories.length > 0 ? (
+          <>
         <div className="category-list">
           {categories.map(category => (
             <button
@@ -343,9 +331,15 @@ export default function RestaurantDetail() {
             </div>
           ))}
         </div>
+          </>
+        ) : (
+          <div className="no-menu-message">
+            <p>Bu restoran için menü bilgisi bulunmamaktadır.</p>
+          </div>
+        )}
       </div>
 
-      {/* Cart button and preview */}
+      {/* Sepet butonu ve önizleme */}
       {cart.length > 0 && (
         <>
           <button className="cart-button" onClick={toggleCartPreview}>

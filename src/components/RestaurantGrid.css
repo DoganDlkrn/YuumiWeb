@@ -1,29 +1,41 @@
+/* RestaurantGrid Ana Konteyner */
 .restaurant-grid-container {
   padding: 20px;
-  width: 100%;
-  box-sizing: border-box;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .grid-title {
+  font-size: 24px;
+  font-weight: 600;
   margin-bottom: 20px;
-  font-size: 1.5rem;
   color: #333;
+  text-align: left;
 }
 
+/* Restaurant Grid Düzeni */
 .restaurant-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
+/* Restaurant Kart */
 .restaurant-card {
   background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  transition: box-shadow 0.3s ease;
   cursor: pointer;
+  position: relative;
 }
 
+.restaurant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Restaurant Resim */
 .restaurant-image {
   width: 100%;
   height: 180px;
@@ -40,43 +52,56 @@
 }
 
 .placeholder-text {
-  font-size: 24px;
-  color: #999;
+  font-size: 48px;
+  font-weight: bold;
+  color: #000;
 }
 
+/* Restaurant Bilgileri */
 .restaurant-info {
   padding: 15px;
+  position: relative;
 }
 
 .restaurant-info h3 {
-  margin: 0 0 5px 0;
+  margin: 0 0 5px;
   font-size: 18px;
+  font-weight: 600;
   color: #333;
 }
 
 .restaurant-category {
-  color: #666;
+  color: #00B2FF;
   font-size: 14px;
-  margin-bottom: 10px;
+  font-weight: 500;
+  margin: 0 0 10px;
 }
 
 .restaurant-details {
+  font-size: 13px;
+  color: #666;
   margin-bottom: 10px;
 }
 
-.restaurant-hours,
-.restaurant-location {
-  font-size: 13px;
-  color: #777;
-  margin: 2px 0;
+.restaurant-hours {
+  margin: 0 0 5px;
 }
 
+.restaurant-location {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Restaurant Alt Bilgi Satırı */
 .restaurant-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 10px;
-  border-top: 1px solid #eee;
+  margin-top: 10px;
+  margin-bottom: 10px; /* Changed from 45px to 10px since we removed the order button */
+  font-size: 14px;
 }
 
 .restaurant-rating {
@@ -85,42 +110,85 @@
 }
 
 .star {
-  color: gold;
-  margin-right: 5px;
+  color: #FFD700;
+  margin-right: 3px;
 }
 
 .restaurant-delivery {
   text-align: right;
-  font-size: 13px;
-  color: #777;
 }
 
 .free-delivery {
   display: block;
-  color: #00B2FF;
   font-size: 12px;
+  color: #4CAF50;
+}
+
+/* Yükleme Göstergesi */
+.loading-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 50px 0;
 }
 
 .loading-spinner {
-  text-align: center;
-  padding: 40px;
-  font-size: 16px;
-  color: #666;
+  font-size: 18px;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Responsive tasarım */
-@media (max-width: 900px) {
-  .restaurant-grid {
-    grid-template-columns: repeat(2, 1fr);
+.loading-spinner::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  border: 3px solid #000;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-@media (max-width: 600px) {
+/* Restoran Yok Mesajı */
+.no-restaurants {
+  text-align: center;
+  padding: 50px 0;
+  color: #666;
+  font-size: 18px;
+}
+
+/* Mobil Uyumluluk */
+@media (max-width: 768px) {
   .restaurant-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
   }
-  
+
   .grid-title {
     font-size: 20px;
+    margin-bottom: 15px;
+  }
+
+  .restaurant-image, .restaurant-image-placeholder {
+    height: 150px;
+  }
+
+  .order-now-button {
+    position: static;
+    margin-top: 15px;
+    border-radius: 6px;
+  }
+  
+  .restaurant-footer {
+    margin-bottom: 10px;
   }
 } 

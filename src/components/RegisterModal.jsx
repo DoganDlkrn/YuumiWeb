@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import "./LoginModal.css"; // Aynı stil dosyasını kullanabiliriz
-import { auth } from "../firebase";
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth, db } from "../firebase";
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import turkeyFlag from "../assets/turkey_flag.png"; // Türk bayrağı import
 import googleLogo from "../assets/google.png"; // Google logosu için
 
@@ -42,16 +43,23 @@ export default function RegisterModal({ onClose, onLoginClick }) {
       
       // Firebase ile kullanıcı oluşturma
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
       
-      // Kullanıcı profilini güncelle (ad, soyad, telefon)
-      await userCredential.user.updateProfile({
+      // Kullanıcı profilini güncelle (ad, soyad)
+      await updateProfile(user, {
         displayName: `${firstName} ${lastName}`
       });
       
-      // Ekstra bilgileri veritabanına kaydedebiliriz (telefon gibi)
-      // Firestore kullanılıyorsa buraya ekleme yapılabilir
+      // Ekstra bilgileri Firestore veritabanına kaydedelim
+      await setDoc(doc(db, "users", user.uid), {
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        phone: phone,
+        createdAt: new Date()
+      });
       
-      console.log("Kullanıcı başarıyla oluşturuldu:", userCredential.user.email);
+      console.log("Kullanıcı başarıyla oluşturuldu:", user.email);
       
       // Başarılı kayıt
       setSuccess(true);
@@ -60,7 +68,7 @@ export default function RegisterModal({ onClose, onLoginClick }) {
       }, 2000);
       
     } catch (error) {
-      console.error("Kayıt hatası:", error.code);
+      console.error("Kayıt hatası:", error.code, error.message);
       
       if (error.code === 'auth/email-already-in-use') {
         setError("Bu e-posta adresi zaten kullanımda.");
@@ -95,6 +103,17 @@ export default function RegisterModal({ onClose, onLoginClick }) {
       
       // Popup kullanarak Google ile giriş yapalım
       const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Google ile giriş yapan kullanıcının bilgilerini Firestore'a kaydedelim
+      await setDoc(doc(db, "users", user.uid), {
+        firstName: user.displayName?.split(' ')[0] || '',
+        lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+        email: user.email,
+        photoURL: user.photoURL,
+        createdAt: new Date()
+      }, { merge: true });
+      
       onClose(); // Başarılı giriş sonrası modalı kapat
       
     } catch (error) {

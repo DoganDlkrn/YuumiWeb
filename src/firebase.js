@@ -1,14 +1,14 @@
 // Firebase yapılandırma
 import { initializeApp } from "firebase/app";
 import { getAuth, browserLocalPersistence, setPersistence } from "firebase/auth";
-import { getFirestore } from "firebase/firestore"; // Import Firestore
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore"; // Import Firestore
 
 // Firebase yapılandırma bilgileri - tam versiyon
 const firebaseConfig = {
   apiKey: "AIzaSyBzNJUPs-h1VxX4wWlM0SeWgQTZqjx9WOE",
   authDomain: "yuumi-4606b.firebaseapp.com",
   projectId: "yuumi-4606b",
-  storageBucket: "yuumi-4606b.firebasestorage.app",
+  storageBucket: "yuumi-4606b.appspot.com",
   messagingSenderId: "156043387950",
   appId: "1:156043387950:web:c988988b17b57f3edc2bbf"
 };
@@ -21,6 +21,12 @@ const auth = getAuth();
 
 // Firestore veritabanını başlat
 const db = getFirestore(app);
+
+// Konsola Firestore bağlantısının kurulduğunu bildir
+console.log("Firebase ve Firestore bağlantısı kuruldu:", {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain
+});
 
 // Auth dili ayarları
 auth.useDeviceLanguage();

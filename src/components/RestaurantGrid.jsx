@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
-export default function RestaurantGrid({ category }) {
+export default function RestaurantGrid({ category, selectedKitchenTypes = [] }) {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -13,78 +13,32 @@ export default function RestaurantGrid({ category }) {
     const fetchRestaurants = async () => {
       try {
         setLoading(true);
-        const querySnapshot = await getDocs(collection(db, "restaurants"));
-        const restaurantData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setRestaurants(restaurantData);
-        console.log("Fetched restaurants:", restaurantData);
+        console.log("Firestore'dan restoranlar çekiliyor...");
+        
+        // Firebase'den restoranları çek
+        const restaurantsRef = collection(db, "restaurants");
+        const querySnapshot = await getDocs(restaurantsRef);
+        
+        console.log("Firestore sorgusu tamamlandı, belge sayısı:", querySnapshot.size);
+        
+        if (querySnapshot.empty) {
+          console.log("Restoranlar koleksiyonu boş, veri bulunamadı!");
+          setRestaurants([]);
+        } else {
+          const restaurantData = querySnapshot.docs.map(doc => {
+            console.log("Belge ID:", doc.id);
+            return {
+              id: doc.id,
+              ...doc.data()
+            };
+          });
+          
+          console.log("Firestore'dan çekilen tüm restoranlar:", restaurantData);
+          setRestaurants(restaurantData);
+        }
       } catch (error) {
-        console.error("Error fetching restaurants:", error);
-        // Add some demo data if Firebase fetch fails
-        setRestaurants([
-          {
-            id: "cigkofteci-ahmet-usta",
-            isim: "Çiğköfteci Ahmet Usta",
-            kategori: "Çiğ Köfte",
-            puan: "4.5",
-            teslimatSuresi: "25-40 dk",
-            adres: "Doğukent Mah. Çarşı İçi No: 7, Elazığ",
-            calismaSaatleri: "10:00 - 01:00",
-            logoUrl: "https://via.placeholder.com/150/008000/FFFFFF/?text=Çiğköfteci"
-          },
-          {
-            id: "deniz-yildizi-balikcisi",
-            isim: "Deniz Yıldızı Balıkçısı",
-            kategori: "Balık & Deniz Ürünleri",
-            puan: "4.7",
-            teslimatSuresi: "25-40 dk",
-            adres: "Göl Kenarı Yolu, Sivrice/Elazığ",
-            calismaSaatleri: "12:00 - 22:00",
-            logoUrl: "https://via.placeholder.com/150/0000FF/FFFFFF/?text=Balık"
-          },
-          {
-            id: "dragon-wok",
-            isim: "Dragon Wok",
-            kategori: "Çin Mutfağı",
-            puan: "4.3",
-            teslimatSuresi: "25-40 dk",
-            adres: "Cumhuriyet Mah. Fatih Ahmet Baba Blv. No: 21, Elazığ",
-            calismaSaatleri: "12:00 - 22:00",
-            logoUrl: "https://via.placeholder.com/150/FF0000/FFFFFF/?text=Çin"
-          },
-          {
-            id: "elazig-manti",
-            isim: "Elazığ Mantı & Gözleme",
-            kategori: "Mantı & Gözleme",
-            puan: "4.6",
-            teslimatSuresi: "20-35 dk",
-            adres: "Rizaiye Mah. Hacı Tevfik Efendi Sok. No: 9, Elazığ",
-            calismaSaatleri: "08:00 - 19:00",
-            logoUrl: "https://via.placeholder.com/150/FFA500/FFFFFF/?text=Mantı"
-          },
-          {
-            id: "elazig-sofrasi",
-            isim: "Elazığ Sofrası",
-            kategori: "Ev Yemekleri & Yöresel",
-            puan: "4.7",
-            teslimatSuresi: "25-40 dk",
-            adres: "İzzetpaşa Mah. Hürriyet Cad. No: 5, Merkez/Elazığ",
-            calismaSaatleri: "08:00 - 20:00",
-            logoUrl: "https://via.placeholder.com/150/964B00/FFFFFF/?text=Yöresel"
-          },
-          {
-            id: "fistikzade-pastanesi",
-            isim: "Fıstıkzade Pastanesi",
-            kategori: "Pastane & Fırın",
-            puan: "4.8",
-            teslimatSuresi: "20-30 dk",
-            adres: "Çaydaçıra Mah. Necip Fazıl Kısakürek Cad. No: 30, Elazığ",
-            calismaSaatleri: "07:00 - 21:00",
-            logoUrl: "https://via.placeholder.com/150/FF00FF/FFFFFF/?text=Pastane"
-          }
-        ]);
+        console.error("Restoranları çekerken hata oluştu:", error);
+        setRestaurants([]);
       } finally {
         setLoading(false);
       }
@@ -94,19 +48,87 @@ export default function RestaurantGrid({ category }) {
   }, []);
 
   const handleRestaurantClick = (restaurantId) => {
-    console.log("Navigating to restaurant:", restaurantId);
+    console.log("Restoran sayfasına yönlendiriliyor:", restaurantId);
     navigate(`/restaurant/${restaurantId}`);
   };
 
+  const matchesKitchenTypes = (restaurant) => {
+    // Filtre seçilmemişse tüm restoranları göster
+    if (!selectedKitchenTypes || selectedKitchenTypes.length === 0) {
+      return true;
+    }
+
+    // Restoran kategorisini daha güvenli bir şekilde kontrol et
+    const kategori = restaurant.kategori?.toLowerCase() || '';
+    
+    // Seçilen filtrelere göre restoranları filtrele
+    for (const kitchenType of selectedKitchenTypes) {
+      // Farklı mutfak türleri için eşleşme kontrolü
+      if (kitchenType === 'balik' && (kategori.includes('balık') || kategori.includes('deniz'))) {
+        return true;
+      }
+      if (kitchenType === 'burger' && kategori.includes('burger')) {
+        return true;
+      }
+      if (kitchenType === 'cag' && kategori.includes('cağ kebap')) {
+        return true;
+      }
+      if (kitchenType === 'cig' && kategori.includes('çiğ köfte')) {
+        return true;
+      }
+      if (kitchenType === 'dondurma' && kategori.includes('dondurma')) {
+        return true;
+      }
+      if (kitchenType === 'doner' && kategori.includes('döner')) {
+        return true;
+      }
+      if (kitchenType === 'dunya' && kategori.includes('dünya')) {
+        return true;
+      }
+      if (kitchenType === 'ev' && kategori.includes('ev')) {
+        return true;
+      }
+      if (kitchenType === 'kahvalti' && (kategori.includes('kahvaltı') || kategori.includes('börek'))) {
+        return true;
+      }
+      if (kitchenType === 'kofte' && kategori.includes('köfte')) {
+        return true;
+      }
+      if (kitchenType === 'manti' && kategori.includes('mantı')) {
+        return true;
+      }
+      if (kitchenType === 'pide' && (kategori.includes('pide') || kategori.includes('lahmacun'))) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
+  // Filtreye göre restoranları filtrele
+  const filteredRestaurants = restaurants.filter(matchesKitchenTypes);
+
   if (loading) {
-    return <div className="loading-spinner">Restoranlar yükleniyor...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">Restoranlar yükleniyor...</div>
+      </div>
+    );
+  }
+
+  if (filteredRestaurants.length === 0) {
+    return <div className="no-restaurants">
+      {selectedKitchenTypes.length > 0 
+        ? "Seçili filtrelere uygun restoran bulunamadı. Lütfen farklı bir filtreleme deneyin." 
+        : "Restoran bulunamadı. Lütfen daha sonra tekrar deneyin."}
+    </div>;
   }
 
   return (
     <div className="restaurant-grid-container">
       <h2 className="grid-title">{category === 'haftalik' ? 'Haftalık Plan İçin Önerilen Restoranlar' : 'Günlük Önerilen Restoranlar'}</h2>
       <div className="restaurant-grid">
-        {restaurants.map(restaurant => (
+        {filteredRestaurants.map(restaurant => (
           <div 
             key={restaurant.id} 
             className="restaurant-card"
@@ -116,14 +138,14 @@ export default function RestaurantGrid({ category }) {
               <img src={restaurant.logoUrl} alt={restaurant.isim} className="restaurant-image" />
             ) : (
               <div className="restaurant-image-placeholder">
-                <span className="placeholder-text">{restaurant.isim.charAt(0)}</span>
+                <span className="placeholder-text">{restaurant.isim?.charAt(0) || "R"}</span>
               </div>
             )}
             <div className="restaurant-info">
               <h3>{restaurant.isim}</h3>
               <p className="restaurant-category">{restaurant.kategori}</p>
               <div className="restaurant-details">
-                <p className="restaurant-hours">{restaurant.calismaSaatleri}</p>
+                <p className="restaurant-hours">{restaurant.calismaSaatleri || restaurant.calismaSaatleri1}</p>
                 <p className="restaurant-location">{restaurant.adres}</p>
               </div>
               <div className="restaurant-footer">

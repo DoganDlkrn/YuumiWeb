@@ -592,7 +592,10 @@ export default function HomePage({ currentUser, authError }) {
             </div>
             
             <div className="main-content">
-              <RestaurantGrid category={activeCategory} />
+              <RestaurantGrid 
+                category={activeCategory} 
+                selectedKitchenTypes={selectedKitchenTypes} 
+              />
             </div>
           </div>
         );
@@ -1307,7 +1310,10 @@ export default function HomePage({ currentUser, authError }) {
             </div>
             
             <div className="main-content">
-              <RestaurantGrid category={activeCategory} />
+              <RestaurantGrid 
+                category={activeCategory} 
+                selectedKitchenTypes={selectedKitchenTypes} 
+              />
             </div>
           </div>
         );

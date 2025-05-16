@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import HomePage from "./components/HomePage";
+import RestaurantDetail from "./components/RestaurantDetail";
 import { auth } from "./firebase";
-import { onAuthStateChanged, getRedirectResult, GoogleAuthProvider } from "firebase/auth";
+import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -45,7 +46,17 @@ function App() {
 
   return (
     <Router>
-      <HomePage currentUser={user} authError={error} />
+      <Routes>
+        <Route path="/" element={<HomePage currentUser={user} authError={error} />} />
+        <Route path="/adreslerim" element={<HomePage currentUser={user} authError={error} />} />
+        <Route path="/siparislerim" element={<HomePage currentUser={user} authError={error} />} />
+        <Route path="/odeme-yontemlerim" element={<HomePage currentUser={user} authError={error} />} />
+        <Route path="/iletisim-tercihlerim" element={<HomePage currentUser={user} authError={error} />} />
+        <Route path="/hesabim" element={<HomePage currentUser={user} authError={error} />} />
+        <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+        <Route path="/restaurant/:id/menu" element={<RestaurantDetail initialTab="menu" />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Router>
   );
 }

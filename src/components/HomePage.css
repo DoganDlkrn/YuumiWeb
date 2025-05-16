@@ -33,6 +33,9 @@ html, body {
   background-color: #fff;
   padding: 15px 20px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 /* Üç sütun yapısı */
@@ -524,6 +527,8 @@ html, body {
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  height: calc(100vh - 80px);
+  overflow-y: auto;
 }
 
 /* Adreslerim sayfası */
@@ -1127,6 +1132,9 @@ html, body {
   max-width: 1400px;
   margin: 0 auto;
   background-color: #ffffff;
+  position: relative;
+  height: calc(100vh - 80px); /* Navbar hariç tam yükseklik */
+  overflow: hidden;
 }
 
 .filter-sidebar {
@@ -1135,11 +1143,18 @@ html, body {
   background-color: #ffffff;
   border-right: 1px solid #eee;
   flex-shrink: 0;
+  position: sticky;
+  top: 80px; /* Navbar yüksekliğinin altından başla */
+  height: calc(100vh - 80px);
+  overflow-y: auto;
+  z-index: 100;
 }
 
 .main-content {
   flex: 1;
   padding: 0 20px;
+  overflow-y: auto;
+  height: calc(100vh - 80px);
 }
 
 .filter-title {
@@ -1451,6 +1466,7 @@ html, body, .homepage {
 /* Make restaurant grid container background white */
 .restaurant-grid-container {
   background-color: #ffffff;
+  padding: 20px 0;
 }
 
 /* Password modal */
@@ -1570,7 +1586,6 @@ html, body, .homepage {
 }
 
 .restaurant-card:hover {
-  transform: translateY(-5px);
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
@@ -1613,4 +1628,80 @@ html, body, .homepage {
   outline: none;
   border-color: #00B2FF;
   background-color: #fff;
+}
+
+/* Yeni Tab Stilleri - Yatay yerleşim */
+.tab-container {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  padding: 10px 15px;
+  gap: 8px;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #00B2FF;
+  border-radius: 3px;
+}
+
+.tab-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.tab-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #555;
+  transition: color 0.2s ease;
+}
+
+.tab-item:hover .tab-label,
+.tab-item.active .tab-label {
+  color: #00B2FF;
+}
+
+.tab-icon {
+  transition: stroke 0.2s ease;
+}
+
+.tab-item:hover .tab-icon {
+  stroke: #00B2FF;
+}
+
+/* Ensure scrollbar styling is consistent */
+.filter-sidebar::-webkit-scrollbar,
+.main-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.filter-sidebar::-webkit-scrollbar-track,
+.main-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.filter-sidebar::-webkit-scrollbar-thumb,
+.main-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.filter-sidebar::-webkit-scrollbar-thumb:hover,
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }

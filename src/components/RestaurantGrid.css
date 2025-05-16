@@ -1,16 +1,14 @@
 /* RestaurantGrid Ana Konteyner */
 .restaurant-grid-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 20px 0;
+  min-height: 100%;
 }
 
 .grid-title {
   font-size: 24px;
   font-weight: 600;
-  margin-bottom: 20px;
   color: #333;
-  text-align: left;
+  margin-bottom: 20px;
 }
 
 /* Restaurant Grid Düzeni */
@@ -18,69 +16,74 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+  width: 100%;
 }
 
 /* Restaurant Kart */
 .restaurant-card {
   background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   overflow: hidden;
-  transition: box-shadow 0.3s ease;
   cursor: pointer;
-  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .restaurant-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 /* Restaurant Resim */
-.restaurant-image {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-}
-
+.restaurant-image,
 .restaurant-image-placeholder {
   width: 100%;
-  height: 180px;
-  background-color: #f0f0f0;
+  height: 160px;
+  object-fit: cover;
+  background-color: #f5f5f5;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .placeholder-text {
-  font-size: 48px;
+  font-size: 36px;
   font-weight: bold;
-  color: #000;
+  color: #00B2FF;
 }
 
 /* Restaurant Bilgileri */
 .restaurant-info {
   padding: 15px;
-  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .restaurant-info h3 {
-  margin: 0 0 5px;
+  margin: 0 0 5px 0;
   font-size: 18px;
-  font-weight: 600;
   color: #333;
+  font-weight: 600;
 }
 
 .restaurant-category {
   color: #00B2FF;
   font-size: 14px;
-  font-weight: 500;
-  margin: 0 0 10px;
+  margin: 0 0 10px 0;
 }
 
 .restaurant-details {
+  margin-bottom: 10px;
+  flex: 1;
+}
+
+.restaurant-details p {
+  margin: 0 0 5px 0;
   font-size: 13px;
   color: #666;
-  margin-bottom: 10px;
 }
 
 .restaurant-hours {
@@ -99,63 +102,47 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
-  margin-bottom: 10px; /* Changed from 45px to 10px since we removed the order button */
-  font-size: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
 }
 
 .restaurant-rating {
   display: flex;
   align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  color: #333;
 }
 
 .star {
-  color: #FFD700;
-  margin-right: 3px;
+  color: #ffcc00;
 }
 
 .restaurant-delivery {
-  text-align: right;
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .free-delivery {
-  display: block;
+  color: #2ecc71;
   font-size: 12px;
-  color: #4CAF50;
 }
 
 /* Yükleme Göstergesi */
 .loading-container {
-  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 50px 0;
+  min-height: 300px;
 }
 
 .loading-spinner {
-  font-size: 18px;
-  color: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.loading-spinner::before {
-  content: "";
-  width: 20px;
-  height: 20px;
-  margin-right: 10px;
-  border: 3px solid #000;
-  border-radius: 50%;
-  border-top-color: transparent;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  color: #00B2FF;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 /* Restoran Yok Mesajı */
@@ -163,14 +150,13 @@
   text-align: center;
   padding: 50px 0;
   color: #666;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 /* Mobil Uyumluluk */
 @media (max-width: 768px) {
   .restaurant-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 
   .grid-title {
@@ -190,5 +176,11 @@
   
   .restaurant-footer {
     margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .restaurant-grid {
+    grid-template-columns: 1fr;
   }
 } 

@@ -154,6 +154,13 @@ export default function HomePage({ currentUser, authError }) {
     }
   };
   
+  // Kategori değiştirme işleyicisi
+  const handleCategoryChange = (category) => {
+    console.log("Kategori değiştiriliyor:", category);
+    setActiveCategory(category);
+    // Kategori değiştiğinde URL değiştirme olmadan state güncelleme
+  };
+  
   // Başlık metnini belirleme
   const getHeaderTitle = () => {
     switch(activePage) {
@@ -162,14 +169,14 @@ export default function HomePage({ currentUser, authError }) {
           <div className="navbar-categories">
             <button 
               className={`category-button ${activeCategory === 'haftalik' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('haftalik')}
+              onClick={() => handleCategoryChange('haftalik')}
             >
               <div className="category-icon weekly-icon"></div>
               <span>Haftalık</span>
             </button>
             <button 
               className={`category-button ${activeCategory === 'gunluk' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('gunluk')}
+              onClick={() => handleCategoryChange('gunluk')}
             >
               <div className="category-icon daily-icon"></div>
               <span>Günlük</span>
@@ -191,14 +198,14 @@ export default function HomePage({ currentUser, authError }) {
           <div className="navbar-categories">
             <button 
               className={`category-button ${activeCategory === 'haftalik' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('haftalik')}
+              onClick={() => handleCategoryChange('haftalik')}
             >
               <div className="category-icon weekly-icon"></div>
               <span>Haftalık</span>
             </button>
             <button 
               className={`category-button ${activeCategory === 'gunluk' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('gunluk')}
+              onClick={() => handleCategoryChange('gunluk')}
             >
               <div className="category-icon daily-icon"></div>
               <span>Günlük</span>
@@ -1515,7 +1522,29 @@ export default function HomePage({ currentUser, authError }) {
         
         {/* Navbar içinde dinamik başlık */}
         <div className="nav-center">
-          {getHeaderTitle()}
+          {activePage === 'home' ? (
+            <div className="tab-container">
+              <div className={`tab-item ${activeCategory === 'haftalik' ? 'active' : ''}`} onClick={() => handleCategoryChange('haftalik')}>
+                <svg className="tab-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={activeCategory === 'haftalik' ? "#00B2FF" : "#555"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                  <text x="12" y="19" textAnchor="middle" fontSize="9" fontFamily="Arial" fill={activeCategory === 'haftalik' ? "#00B2FF" : "#555"}>7</text>
+                </svg>
+                <span className="tab-label">Haftalık</span>
+              </div>
+              <div className={`tab-item ${activeCategory === 'gunluk' ? 'active' : ''}`} onClick={() => handleCategoryChange('gunluk')}>
+                <svg className="tab-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={activeCategory === 'gunluk' ? "#00B2FF" : "#555"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span className="tab-label">Günlük</span>
+              </div>
+            </div>
+          ) : (
+            getHeaderTitle()
+          )}
         </div>
         
         <div className="nav-right">

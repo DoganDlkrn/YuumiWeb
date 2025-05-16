@@ -35,76 +35,104 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
           console.log("Firebase'den çekilen restoran verisi:", data);
           
           // Menü verilerini işle
-          if (!data.menu) {
-            data.menu = [];
+          if (!data.menu || (Array.isArray(data.menu) && data.menu.length === 0)) {
+            console.log("Menü verisi bulunamadı veya boş, menu alt koleksiyonunu kontrol ediyorum");
             
             // Menü alt koleksiyonunu kontrol et
             try {
-            const menuSnapshot = await getDocs(collection(db, "restaurants", id, "menu"));
+              const menuColRef = collection(db, "restaurants", id, "menu");
+              console.log("Menu koleksiyon referansı oluşturuldu:", menuColRef);
+              
+              const menuSnapshot = await getDocs(menuColRef);
+              console.log("Menu koleksiyonu sorgusu tamamlandı, belge sayısı:", menuSnapshot.size);
               
               if (!menuSnapshot.empty) {
-            const menuItems = menuSnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-            data.menu = menuItems;
+                const menuItems = menuSnapshot.docs.map(doc => ({
+                  id: doc.id,
+                  ...doc.data()
+                }));
+                data.menu = menuItems;
                 console.log("Menü alt koleksiyonundan çekildi:", menuItems);
               } else {
-                // Menü alanını kontrol et (Firebase'deki yapıya göre)
-                console.log("Menü alt koleksiyonu bulunamadı, belge içindeki menü alanını kontrol ediyorum");
+                console.log("Menü alt koleksiyonu boş, alternatif yapıları kontrol ediyorum");
                 
-                // Nested menü yapısı kontrolü
-                if (data.menu && typeof data.menu === 'object' && !Array.isArray(data.menu)) {
-                  const menuItems = [];
-                  
-                  // Kategori gruplarını dön
-                  Object.keys(data.menu).forEach(categoryKey => {
-                    const category = data.menu[categoryKey];
+                // menuItems alanını kontrol et
+                if (data.menuItems && Array.isArray(data.menuItems) && data.menuItems.length > 0) {
+                  console.log("menuItems alanından menü verileri bulundu:", data.menuItems);
+                  data.menu = data.menuItems;
+                } else {
+                  // Nested menü yapısı kontrolü
+                  if (data.menu && typeof data.menu === 'object' && !Array.isArray(data.menu)) {
+                    console.log("Nested menü yapısı tespit edildi");
+                    const menuItems = [];
                     
-                    // Her kategori içindeki menü öğelerini dön
-                    if (typeof category === 'object') {
-                      Object.keys(category).forEach(itemKey => {
-                        const item = category[itemKey];
-                        
-                        // Geçerli bir menü öğesi mi kontrol et
-                        if (item && typeof item === 'object' && item.isim && (item.fiyat || item.fiyat === 0)) {
-                          // Kategori adını belirle
-                          let kategoriAdi;
-                          if (categoryKey === '0') {
-                            kategoriAdi = 'Pizzalar';
-                          } else if (categoryKey === '1') {
-                            kategoriAdi = 'Makarnalar';
-                          } else if (item.kategori) {
-                            kategoriAdi = item.kategori;
-                          } else {
-                            kategoriAdi = 'Diğer';
-                          }
+                    // Kategori gruplarını dön
+                    Object.keys(data.menu).forEach(categoryKey => {
+                      const category = data.menu[categoryKey];
+                      console.log(`Kategori grubu işleniyor: ${categoryKey}`, category);
+                      
+                      // Her kategori içindeki menü öğelerini dön
+                      if (typeof category === 'object') {
+                        Object.keys(category).forEach(itemKey => {
+                          const item = category[itemKey];
                           
-                          menuItems.push({
-                            id: itemKey,
-                            kategori: kategoriAdi,
-                            ...item
-                          });
-                        }
-                      });
+                          // Geçerli bir menü öğesi mi kontrol et
+                          if (item && typeof item === 'object' && item.isim && (item.fiyat || item.fiyat === 0)) {
+                            // Kategori adını belirle
+                            let kategoriAdi;
+                            if (categoryKey === '0') {
+                              kategoriAdi = 'Pizzalar';
+                            } else if (categoryKey === '1') {
+                              kategoriAdi = 'Makarnalar';
+                            } else if (item.kategori) {
+                              kategoriAdi = item.kategori;
+                            } else {
+                              kategoriAdi = 'Diğer';
+                            }
+                            
+                            console.log(`Menü öğesi ekleniyor: ${item.isim}, kategori: ${kategoriAdi}`);
+                            menuItems.push({
+                              id: itemKey,
+                              kategori: kategoriAdi,
+                              ...item
+                            });
+                          }
+                        });
+                      }
+                    });
+                    
+                    if (menuItems.length > 0) {
+                      data.menu = menuItems;
+                      console.log("Nested menü yapısından çekildi:", menuItems);
+                    } else {
+                      console.log("Nested menü yapısından hiç öğe çekilemedi");
+                      data.menu = [];
                     }
-                  });
-                  
-                  data.menu = menuItems;
-                  console.log("Nested menü yapısından çekildi:", menuItems);
+                  } else {
+                    console.log("Hiçbir menü yapısı bulunamadı, boş bir menü dizisi oluşturuluyor");
+                    data.menu = [];
+                  }
                 }
               }
             } catch (error) {
               console.error("Menü verisi çekilirken hata:", error);
+              data.menu = [];
             }
+          } else {
+            console.log("Restoran verisinde menü doğrudan mevcut:", data.menu);
           }
           
+          console.log("İşlenmiş final restoran verisi:", data);
           setRestaurant(data);
           
           // Varsayılan aktif kategoriyi ayarla
           if (data.menu && data.menu.length > 0) {
             const categories = getCategories(data);
-            setActiveCategory(categories[0]);
+            console.log("Mevcut kategoriler:", categories);
+            if (categories.length > 0) {
+              setActiveCategory(categories[0]);
+              console.log("Aktif kategori ayarlandı:", categories[0]);
+            }
           }
         } else {
           console.log("Restoran bulunamadı!");
@@ -135,10 +163,21 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
 
   // Menüden kategorileri al
   const getCategories = (restaurantData) => {
-    if (restaurantData.menu && restaurantData.menu.length > 0) {
-      return [...new Set(restaurantData.menu.map(item => item.kategori))];
-    } else if (restaurantData.menuItems && restaurantData.menuItems.length > 0) {
-      return [...new Set(restaurantData.menuItems.map(item => item.kategori))];
+    if (restaurantData.menu && Array.isArray(restaurantData.menu) && restaurantData.menu.length > 0) {
+      // Kategori değeri olmayan öğeleri "Diğer" olarak işaretle
+      const safeMenu = restaurantData.menu.map(item => ({
+        ...item,
+        kategori: item.kategori || 'Diğer'
+      }));
+      
+      return [...new Set(safeMenu.map(item => item.kategori))];
+    } else if (restaurantData.menuItems && Array.isArray(restaurantData.menuItems) && restaurantData.menuItems.length > 0) {
+      const safeMenuItems = restaurantData.menuItems.map(item => ({
+        ...item,
+        kategori: item.kategori || 'Diğer'
+      }));
+      
+      return [...new Set(safeMenuItems.map(item => item.kategori))];
     }
     return [];
   };
@@ -231,26 +270,33 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
     );
   }
 
+  console.log("Render aşamasındaki restoran verisi:", restaurant);
+
   // Menü öğelerini kategorilere göre grupla
   const menuByCategory = {};
-  if (restaurant.menu && restaurant.menu.length > 0) {
+  if (restaurant.menu && Array.isArray(restaurant.menu) && restaurant.menu.length > 0) {
     restaurant.menu.forEach(item => {
-      if (!menuByCategory[item.kategori]) {
-        menuByCategory[item.kategori] = [];
+      const kategori = item.kategori || 'Diğer';
+      if (!menuByCategory[kategori]) {
+        menuByCategory[kategori] = [];
       }
-      menuByCategory[item.kategori].push(item);
+      menuByCategory[kategori].push(item);
     });
-  } else if (restaurant.menuItems && restaurant.menuItems.length > 0) {
+    console.log("Kategorilere göre gruplanmış menü:", menuByCategory);
+  } else if (restaurant.menuItems && Array.isArray(restaurant.menuItems) && restaurant.menuItems.length > 0) {
     restaurant.menuItems.forEach(item => {
-      if (!menuByCategory[item.kategori]) {
-        menuByCategory[item.kategori] = [];
+      const kategori = item.kategori || 'Diğer';
+      if (!menuByCategory[kategori]) {
+        menuByCategory[kategori] = [];
       }
-      menuByCategory[item.kategori].push(item);
+      menuByCategory[kategori].push(item);
     });
+    console.log("menuItems'tan kategorilere göre gruplanmış menü:", menuByCategory);
   }
 
   // Tüm kategorileri al
   const categories = getCategories(restaurant);
+  console.log("Render için hazırlanan kategoriler:", categories);
 
   return (
     <div className="restaurant-detail-container">
@@ -272,7 +318,7 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
       </div>
 
       <div className="restaurant-content">
-        {categories.length > 0 ? (
+        {categories && categories.length > 0 ? (
           <>
         <div className="category-list">
           {categories.map(category => (

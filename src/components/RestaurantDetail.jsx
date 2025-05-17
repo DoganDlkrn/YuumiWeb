@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { doc, getDoc, collection, getDocs, addDoc, query, where, getDocs as getDocsQuery } from 'firebase/firestore';
+import { db, auth } from '../firebase';
 import './RestaurantDetail.css';
 
-export default function RestaurantDetail({ initialTab = 'info' }) {
+export default function RestaurantDetail({ initialTab = 'menu' }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [restaurant, setRestaurant] = useState(null);
@@ -15,11 +15,108 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
   const [cartTotal, setCartTotal] = useState(0);
   const [showAddedAnimation, setShowAddedAnimation] = useState(null);
   const [showCartPreview, setShowCartPreview] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [userReview, setUserReview] = useState(null);
+  const [newReviewText, setNewReviewText] = useState('');
+  const [newReviewRating, setNewReviewRating] = useState(0);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [hasUserReviewed, setHasUserReviewed] = useState(false);
+  const [calculatedRating, setCalculatedRating] = useState(0);
 
   // Set active tab based on initialTab prop
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
+
+  // Hide any standalone menu button at the bottom
+  useEffect(() => {
+    const hideMenuButtons = () => {
+      // Find all buttons with text containing "Menü" except those in the tab navigation
+      const allButtons = document.querySelectorAll('button:not(.restaurant-nav-tab)');
+      allButtons.forEach(button => {
+        if (button.textContent.includes('Menü') && !button.closest('.restaurant-tabs') && !button.closest('.category-list')) {
+          button.style.display = 'none';
+        }
+      });
+      
+      // Also hide any standalone menu links
+      const menuLinks = document.querySelectorAll('a');
+      menuLinks.forEach(link => {
+        if (link.textContent.includes('Menü') && !link.closest('.restaurant-tabs') && !link.closest('.category-list')) {
+          link.style.display = 'none';
+        }
+      });
+
+      // Hide menu button that is standalone and inside a blue circle
+      const blueCircleMenuBtn = document.querySelector('.menu-button-blue, .menu-btn, button.menu-standalone, .menu-button');
+      if (blueCircleMenuBtn) {
+        blueCircleMenuBtn.style.display = 'none';
+      }
+    };
+    
+    // Run once when component mounts
+    hideMenuButtons();
+    
+    // Also run after a slight delay to catch any dynamically added elements
+    const timer = setTimeout(hideMenuButtons, 500);
+    
+    // Run again after a longer delay to ensure all dynamic content is loaded
+    const longTimer = setTimeout(hideMenuButtons, 2000);
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(longTimer);
+    };
+  }, []);
+
+  // Yorumları yükleme
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!id) return;
+      
+      try {
+        const reviewsRef = collection(db, "restaurants", id, "reviews");
+        const reviewsSnap = await getDocs(reviewsRef);
+        
+        if (!reviewsSnap.empty) {
+          const reviewsData = reviewsSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            date: doc.data().date?.toDate() || new Date()
+          }));
+          
+          setReviews(reviewsData);
+          
+          // Calculate average rating
+          let totalRating = 0;
+          reviewsData.forEach(review => {
+            if (review.rating) {
+              totalRating += review.rating;
+            }
+          });
+          
+          const avgRating = totalRating / reviewsData.length;
+          setCalculatedRating(avgRating.toFixed(1));
+          
+          // Check if current user has already reviewed
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            const userReviewData = reviewsData.find(review => review.userId === currentUser.uid);
+            if (userReviewData) {
+              setUserReview(userReviewData);
+              setHasUserReviewed(true);
+            }
+          }
+        } else {
+          setCalculatedRating(restaurant?.puan || '4.5');
+        }
+      } catch (error) {
+        console.error("Yorumlar yüklenirken hata:", error);
+      }
+    };
+    
+    fetchReviews();
+  }, [id, restaurant]);
 
   useEffect(() => {
     const fetchRestaurantData = async () => {
@@ -81,13 +178,13 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
                             // Kategori adını belirle
                             let kategoriAdi;
                             if (categoryKey === '0') {
-                              kategoriAdi = 'Pizzalar';
+                              kategoriAdi = 'Menü';
                             } else if (categoryKey === '1') {
                               kategoriAdi = 'Makarnalar';
                             } else if (item.kategori) {
                               kategoriAdi = item.kategori;
                             } else {
-                              kategoriAdi = 'Diğer';
+                              kategoriAdi = 'Menü';
                             }
                             
                             console.log(`Menü öğesi ekleniyor: ${item.isim}, kategori: ${kategoriAdi}`);
@@ -164,17 +261,17 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
   // Menüden kategorileri al
   const getCategories = (restaurantData) => {
     if (restaurantData.menu && Array.isArray(restaurantData.menu) && restaurantData.menu.length > 0) {
-      // Kategori değeri olmayan öğeleri "Diğer" olarak işaretle
+      // Kategori değeri olmayan öğeleri "Menü" olarak işaretle
       const safeMenu = restaurantData.menu.map(item => ({
         ...item,
-        kategori: item.kategori || 'Diğer'
+        kategori: item.kategori || 'Menü'
       }));
       
       return [...new Set(safeMenu.map(item => item.kategori))];
     } else if (restaurantData.menuItems && Array.isArray(restaurantData.menuItems) && restaurantData.menuItems.length > 0) {
       const safeMenuItems = restaurantData.menuItems.map(item => ({
         ...item,
-        kategori: item.kategori || 'Diğer'
+        kategori: item.kategori || 'Menü'
       }));
       
       return [...new Set(safeMenuItems.map(item => item.kategori))];
@@ -253,6 +350,88 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
     setShowCartPreview(!showCartPreview);
   };
 
+  // Yeni yorum ekle
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert("Yorum yapmak için giriş yapmalısınız.");
+      return;
+    }
+    
+    if (newReviewText.trim() === '') {
+      alert("Lütfen yorum yazınız.");
+      return;
+    }
+    
+    if (newReviewRating === 0) {
+      alert("Lütfen bir yıldız puanı seçiniz.");
+      return;
+    }
+    
+    if (hasUserReviewed) {
+      alert("Bu restoran için zaten bir yorum yapmışsınız.");
+      return;
+    }
+    
+    try {
+      setReviewSubmitting(true);
+      
+      const reviewData = {
+        userId: currentUser.uid,
+        userName: currentUser.displayName || currentUser.email.split('@')[0],
+        userPhoto: currentUser.photoURL || null,
+        rating: newReviewRating,
+        text: newReviewText,
+        date: new Date()
+      };
+      
+      const reviewsRef = collection(db, "restaurants", id, "reviews");
+      const docRef = await addDoc(reviewsRef, reviewData);
+      
+      const newReview = {
+        id: docRef.id,
+        ...reviewData
+      };
+      
+      // Update reviews and recalculate average rating
+      const updatedReviews = [newReview, ...reviews];
+      setReviews(updatedReviews);
+      
+      // Recalculate average rating
+      let totalRating = 0;
+      updatedReviews.forEach(review => {
+        if (review.rating) {
+          totalRating += review.rating;
+        }
+      });
+      
+      const avgRating = totalRating / updatedReviews.length;
+      setCalculatedRating(avgRating.toFixed(1));
+      
+          setUserReview(newReview);
+    setHasUserReviewed(true);
+    setNewReviewText('');
+    setNewReviewRating(0);
+    
+    alert("Yorumunuz başarıyla eklendi!");
+    } catch (error) {
+      console.error("Yorum eklenirken hata:", error);
+      alert("Yorum eklenirken bir hata oluştu. Lütfen tekrar deneyin.");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  // Tarih formatla
+  const formatDate = (date) => {
+    if (!date) return "";
+    
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(date).toLocaleDateString('tr-TR', options);
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -276,7 +455,7 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
   const menuByCategory = {};
   if (restaurant.menu && Array.isArray(restaurant.menu) && restaurant.menu.length > 0) {
     restaurant.menu.forEach(item => {
-      const kategori = item.kategori || 'Diğer';
+      const kategori = item.kategori || 'Menü';
       if (!menuByCategory[kategori]) {
         menuByCategory[kategori] = [];
       }
@@ -285,7 +464,7 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
     console.log("Kategorilere göre gruplanmış menü:", menuByCategory);
   } else if (restaurant.menuItems && Array.isArray(restaurant.menuItems) && restaurant.menuItems.length > 0) {
     restaurant.menuItems.forEach(item => {
-      const kategori = item.kategori || 'Diğer';
+      const kategori = item.kategori || 'Menü';
       if (!menuByCategory[kategori]) {
         menuByCategory[kategori] = [];
       }
@@ -301,14 +480,14 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
   return (
     <div className="restaurant-detail-container">
       <div className="restaurant-header">
-        <button className="back-button" onClick={handleBack}>
-          ← Geri
-        </button>
         <div className="restaurant-header-info">
           <h1 className="restaurant-name">{restaurant.isim}</h1>
           <p className="restaurant-category">{restaurant.kategori}</p>
           <div className="restaurant-meta">
-            <span className="restaurant-rating">★ {restaurant.puan || '4.5'}</span>
+            <div className="restaurant-rating">
+              <span className="star">★</span> {calculatedRating || restaurant.puan || '4.5'}
+              <span className="review-count">({reviews.length})</span>
+            </div>
             <span className="delivery-time">{restaurant.teslimatSuresi || '25-40 dk'}</span>
             <span className="delivery-fee">Ücretsiz Teslimat</span>
           </div>
@@ -317,70 +496,205 @@ export default function RestaurantDetail({ initialTab = 'info' }) {
         </div>
       </div>
 
-      <div className="restaurant-content">
-        {categories && categories.length > 0 ? (
-          <>
-        <div className="category-list">
-          {categories.map(category => (
-            <button
-              key={category}
-              className={`category-button ${activeCategory === category ? 'active' : ''}`}
-              onClick={() => setActiveCategory(category)}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
+      <div className="restaurant-tabs">
+        <button 
+          className={`restaurant-tab restaurant-nav-tab ${activeTab === 'menu' ? 'active' : ''}`}
+          onClick={() => setActiveTab('menu')}
+        >
+          Menü
+        </button>
+        <button 
+          className={`restaurant-tab restaurant-nav-tab ${activeTab === 'reviews' ? 'active' : ''}`}
+          onClick={() => setActiveTab('reviews')}
+        >
+          Yorumlar ({reviews.length})
+        </button>
+        <button 
+          className={`restaurant-tab restaurant-nav-tab ${activeTab === 'info' ? 'active' : ''}`}
+          onClick={() => setActiveTab('info')}
+        >
+          Bilgiler
+        </button>
+      </div>
 
-        <div className="menu-container">
-          {categories.map(category => (
-            <div
-              key={category}
-              className={`menu-category ${activeCategory === category ? 'active' : ''}`}
-              id={`category-${category.replace(/\s+/g, '-').toLowerCase()}`}
-            >
-              <h2 className="category-title">{category}</h2>
-              <div className="menu-items">
-                {menuByCategory[category]?.map(item => (
-                  <div key={item.id} className="menu-item">
-                    <div className="menu-item-info">
-                      <h3 className="menu-item-name">{item.isim}</h3>
-                      <p className="menu-item-description">{item.aciklama || ''}</p>
+      <div className="restaurant-content">
+        {activeTab === 'menu' && (
+          <>
+            {categories && categories.length > 0 ? (
+              <>
+                <div className="category-list">
+                  {categories.map(category => (
+                    <div key={category}>
+                      {category}
                     </div>
-                    <div className="menu-item-actions">
-                      <span className="menu-item-price">
-                        ₺{typeof item.fiyat === 'number' ? item.fiyat.toFixed(2) : item.fiyat}
-                      </span>
-                      <div className="quantity-controls">
-                        {getItemQuantity(item.id) > 0 && (
-                          <>
-                            <button 
-                              className="quantity-btn remove-btn"
-                              onClick={() => removeFromCart(item.id)}
-                            >
-                              -
-                            </button>
-                            <span className="quantity">{getItemQuantity(item.id)}</span>
-                          </>
-                        )}
-                        <button 
-                          className={`add-to-cart-button ${showAddedAnimation === item.id ? 'animate' : ''}`}
-                          onClick={() => addToCart(item)}
-                        >
-                          {getItemQuantity(item.id) === 0 ? '+ Ekle' : '+'}
-                        </button>
+                  ))}
+                </div>
+
+                <div className="menu-container">
+                  {categories.map(category => (
+                    <div
+                      key={category}
+                      className={`menu-category ${activeCategory === category ? 'active' : ''}`}
+                      id={`category-${category.replace(/\s+/g, '-').toLowerCase()}`}
+                    >
+                      <h2 className="category-title">{category}</h2>
+                      <div className="menu-items">
+                        {menuByCategory[category]?.map(item => (
+                          <div key={item.id} className="menu-item">
+                            <div className="menu-item-info">
+                              <h3 className="menu-item-name">{item.isim}</h3>
+                              <p className="menu-item-description">{item.aciklama || ''}</p>
+                            </div>
+                            <div className="menu-item-actions">
+                              <span className="menu-item-price">
+                                ₺{typeof item.fiyat === 'number' ? item.fiyat.toFixed(2) : item.fiyat}
+                              </span>
+                              <div className="quantity-controls">
+                                {getItemQuantity(item.id) > 0 && (
+                                  <>
+                                    <button 
+                                      className="quantity-btn remove-btn"
+                                      onClick={() => removeFromCart(item.id)}
+                                    >
+                                      -
+                                    </button>
+                                    <span className="quantity">{getItemQuantity(item.id)}</span>
+                                  </>
+                                )}
+                                <button 
+                                  className={`add-to-cart-button ${showAddedAnimation === item.id ? 'animate' : ''}`}
+                                  onClick={() => addToCart(item)}
+                                >
+                                  {getItemQuantity(item.id) === 0 ? '+ Ekle' : '+'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="no-menu-message">
+                <p>Bu restoran için menü bilgisi bulunmamaktadır.</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'reviews' && (
+          <div className="reviews-container">
+            <div className="reviews-header">
+              <h2>Restoran Yorumları</h2>
+              {!hasUserReviewed && auth.currentUser && (
+                <div className="review-form">
+                  <h3>Yorum Yap</h3>
+                  <form onSubmit={handleSubmitReview}>
+                    <div className="rating-selector">
+                      <p>Puanınız: <span className="required">*</span></p>
+                      <div className="star-rating">
+                        {[5, 4, 3, 2, 1].map(star => (
+                          <span 
+                            key={star}
+                            className={`rating-star ${newReviewRating >= star ? 'selected' : ''}`}
+                            onClick={() => setNewReviewRating(star)}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      {newReviewRating === 0 && <p className="rating-error">Lütfen bir yıldız seçiniz</p>}
+                    </div>
+                    <textarea 
+                      placeholder="Deneyiminizi paylaşın..."
+                      value={newReviewText}
+                      onChange={(e) => setNewReviewText(e.target.value)}
+                      required
+                    ></textarea>
+                    <button 
+                      type="submit" 
+                      className="submit-review" 
+                      disabled={reviewSubmitting || newReviewRating === 0}
+                    >
+                      {reviewSubmitting ? 'Gönderiliyor...' : 'Yorum Yap'}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+
+            <div className="reviews-list">
+              {reviews.length > 0 ? (
+                reviews.map(review => (
+                  <div key={review.id} className="review-item">
+                    <div className="review-header">
+                      <div className="reviewer-info">
+                        <div className="reviewer-avatar">
+                          {review.userPhoto ? (
+                            <img src={review.userPhoto} alt={review.userName} />
+                          ) : (
+                            <div className="avatar-placeholder">{review.userName?.charAt(0)}</div>
+                          )}
+                        </div>
+                        <div className="reviewer-meta">
+                          <div className="reviewer-name">{review.userName}</div>
+                          <div className="review-date">{formatDate(review.date)}</div>
+                        </div>
+                      </div>
+                      <div className="review-rating">
+                        <span className="star filled">★</span>
+                        <span>{review.rating}</span>
+                      </div>
+                    </div>
+                    <div className="review-content">
+                      <p>{review.text}</p>
+                    </div>
                   </div>
-                ))}
+                ))
+              ) : (
+                <div className="no-reviews">
+                  <p>Bu restoran için henüz yorum yapılmamış.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'info' && (
+          <div className="restaurant-info-tab">
+            <div className="info-section">
+              <h3>Restoran Bilgileri</h3>
+              <div className="info-item">
+                <div className="info-icon address-icon"></div>
+                <div className="info-content">
+                  <h4>Adres</h4>
+                  <p>{restaurant.adres}</p>
+                </div>
+              </div>
+              <div className="info-item">
+                <div className="info-icon time-icon"></div>
+                <div className="info-content">
+                  <h4>Çalışma Saatleri</h4>
+                  <p>{restaurant.calismaSaatleri || restaurant.calismaSaatleri1 || "12:00 - 22:00"}</p>
+                </div>
+              </div>
+              <div className="info-item">
+                <div className="info-icon phone-icon"></div>
+                <div className="info-content">
+                  <h4>Telefon</h4>
+                  <p>{restaurant.telefon || "Bilgi bulunmuyor"}</p>
+                </div>
+              </div>
+              <div className="info-item">
+                <div className="info-icon category-icon"></div>
+                <div className="info-content">
+                  <h4>Mutfak</h4>
+                  <p>{restaurant.kategori}</p>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-          </>
-        ) : (
-          <div className="no-menu-message">
-            <p>Bu restoran için menü bilgisi bulunmamaktadır.</p>
           </div>
         )}
       </div>

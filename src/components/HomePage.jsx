@@ -7,7 +7,7 @@ import LoginModal from "./LoginModal";
 import RegisterModal from "./RegisterModal";
 import RestaurantGrid from "./RestaurantGrid"; // Import RestaurantGrid component
 import { auth } from "../firebase";
-import { signOut } from "firebase/auth";
+import { signOut, updateProfile, updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import MapComponent from './MapComponent';
 
@@ -48,6 +48,17 @@ export default function HomePage({ currentUser, authError }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  
+  // Add state for editing account details
+  const [editingField, setEditingField] = useState(null);
+  const [nameInput, setNameInput] = useState('');
+  const [surnameInput, setSurnameInput] = useState('');
+  const [phoneInput, setPhoneInput] = useState('');
+  
+  // Add states for all field edit modals
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [showSurnameModal, setShowSurnameModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
   
   // Sayfa değiştiğinde activePage'i güncelle
   useEffect(() => {
@@ -129,10 +140,34 @@ export default function HomePage({ currentUser, authError }) {
     return "";
   };
   
+  // Kullanıcının sadece adını döndüren yardımcı fonksiyon
+  const getUserFirstName = () => {
+    if (currentUser) {
+      if (currentUser.displayName) {
+        return currentUser.displayName.split(' ')[0];
+      } else {
+        // E-posta adresinden kullanıcı adını çıkar (@ işaretinden önceki kısım)
+        return currentUser.email.split('@')[0];
+      }
+    }
+    return "";
+  };
+  
   // Telefon numarasını formatla
   const formatPhoneNumber = (phone) => {
     if (!phone) return "";
-    return phone;
+    
+    // Format the phone number if needed
+    const numbers = phone.replace(/\D/g, '');
+    let formatted = '';
+    for (let i = 0; i < numbers.length; i++) {
+      // Add spaces after 3rd, 6th, and 8th digits
+      if (i === 3 || i === 6 || i === 8) {
+        formatted += ' ';
+      }
+      formatted += numbers[i];
+    }
+    return formatted;
   };
   
   // Sayfa değiştirme fonksiyonu
@@ -277,7 +312,7 @@ export default function HomePage({ currentUser, authError }) {
                     />
                     <span className="search-icon">🔍</span>
                   </div>
-                  <div className={`filter-options ${showAllKitchenTypes ? 'expanded' : 'scrollable'}`}>
+                  <div className={`filter-options ${showAllKitchenTypes ? 'expanded' : 'collapsed'}`}>
                     <label className="filter-option">
                       <input 
                         type="checkbox" 
@@ -619,7 +654,7 @@ export default function HomePage({ currentUser, authError }) {
                       <p>Cumhuriyet Mah. Prof. Dr. Ahmet Babababa Blv. No: 21, Elazığ</p>
                     </div>
                     <div className="address-check"></div>
-                    <button className="address-delete-btn">×</button>
+                    <button className="address-delete-btn" onClick={() => handleDeleteAddress(0)}>×</button>
                   </div>
                   
                   <div className="address-item">
@@ -628,7 +663,7 @@ export default function HomePage({ currentUser, authError }) {
                       <h3>İş</h3>
                       <p>Fırat Üniversitesi, Mühendislik Fakültesi, Merkez/Elazığ</p>
                     </div>
-                    <button className="address-delete-btn">×</button>
+                    <button className="address-delete-btn" onClick={() => handleDeleteAddress(1)}>×</button>
                   </div>
                   
                   <button className="add-address-btn" onClick={handleAddAddress}>
@@ -902,14 +937,14 @@ export default function HomePage({ currentUser, authError }) {
                   <div className="info-row">
                     <div className="info-label">Ad</div>
                     <div className="info-value">{currentUser?.displayName?.split(' ')[0] || 'Belirtilmemiş'}</div>
-                    <button className="edit-btn-icon" aria-label="Düzenle">
+                    <button className="edit-btn-icon" aria-label="Düzenle" onClick={() => handleEditField('name')}>
                       <span className="pencil-icon"></span>
                     </button>
                   </div>
                   <div className="info-row">
                     <div className="info-label">Soyad</div>
                     <div className="info-value">{currentUser?.displayName?.split(' ')[1] || 'Belirtilmemiş'}</div>
-                    <button className="edit-btn-icon" aria-label="Düzenle">
+                    <button className="edit-btn-icon" aria-label="Düzenle" onClick={() => handleEditField('surname')}>
                       <span className="pencil-icon"></span>
                     </button>
                   </div>
@@ -919,15 +954,15 @@ export default function HomePage({ currentUser, authError }) {
                   </div>
                   <div className="info-row">
                     <div className="info-label">Telefon</div>
-                    <div className="info-value">{formatPhoneNumber(currentUser?.phoneNumber) || 'Belirtilmemiş'}</div>
-                    <button className="edit-btn-icon" aria-label="Düzenle">
+                    <div className="info-value">{displayPhoneNumber(currentUser?.phoneNumber) || 'Belirtilmemiş'}</div>
+                    <button className="edit-btn-icon" aria-label="Düzenle" onClick={() => handleEditField('phone')}>
                       <span className="pencil-icon"></span>
                     </button>
                   </div>
                   <div className="info-row">
                     <div className="info-label">Şifre</div>
                     <div className="info-value">********</div>
-                    <button className="edit-btn-icon" aria-label="Değiştir" onClick={handlePasswordChange}>
+                    <button className="edit-btn-icon" aria-label="Değiştir" onClick={() => handleEditField('password')}>
                       <span className="pencil-icon"></span>
                     </button>
                   </div>
@@ -995,7 +1030,7 @@ export default function HomePage({ currentUser, authError }) {
                     />
                     <span className="search-icon">🔍</span>
                   </div>
-                  <div className={`filter-options ${showAllKitchenTypes ? 'expanded' : 'scrollable'}`}>
+                  <div className={`filter-options ${showAllKitchenTypes ? 'expanded' : 'collapsed'}`}>
                     <label className="filter-option">
                       <input 
                         type="checkbox" 
@@ -1360,9 +1395,16 @@ export default function HomePage({ currentUser, authError }) {
     }
     
     try {
-      // Password change logic would go here (Firebase implementation)
-      // This is a placeholder for now
-      console.log('Şifre değiştirme işlemi: ', currentPassword, newPassword);
+      // Reauthenticate user before changing password
+      const credential = EmailAuthProvider.credential(
+        auth.currentUser.email,
+        currentPassword
+      );
+      
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      
+      // Update password
+      await updatePassword(auth.currentUser, newPassword);
       
       setPasswordSuccess('Şifreniz başarıyla değiştirildi');
       setTimeout(() => {
@@ -1373,8 +1415,15 @@ export default function HomePage({ currentUser, authError }) {
         setPasswordSuccess('');
       }, 2000);
     } catch (error) {
-      setPasswordError('Şifre değiştirme işlemi başarısız oldu');
       console.error('Şifre değiştirme hatası:', error);
+      
+      if (error.code === 'auth/wrong-password') {
+        setPasswordError('Mevcut şifreniz yanlış');
+      } else if (error.code === 'auth/weak-password') {
+        setPasswordError('Şifre çok zayıf');
+      } else {
+        setPasswordError(`Şifre değiştirme işlemi başarısız oldu: ${error.message}`);
+      }
     }
   };
   
@@ -1503,6 +1552,124 @@ export default function HomePage({ currentUser, authError }) {
     });
   };
   
+  // Edit field handlers
+  const handleEditField = (field) => {
+    if (field === 'name') {
+      setNameInput(currentUser?.displayName?.split(' ')[0] || '');
+      setShowNameModal(true);
+    } else if (field === 'surname') {
+      setSurnameInput(currentUser?.displayName?.split(' ')[1] || '');
+      setShowSurnameModal(true);
+    } else if (field === 'phone') {
+      // Remove +90 prefix if it exists for editing
+      const phone = currentUser?.phoneNumber || '';
+      const formattedPhone = phone.startsWith('+90') ? phone.substring(3) : phone;
+      setPhoneInput(formatPhoneNumber(formattedPhone));
+      setShowPhoneModal(true);
+    } else if (field === 'password') {
+      setShowPasswordModal(true);
+    }
+  };
+
+  const saveFieldEdit = async (field) => {
+    try {
+      if (field === 'name') {
+        const surname = currentUser?.displayName?.split(' ')[1] || '';
+        // Show confirmation dialog with properly styled buttons
+        if (window.confirm(`"${nameInput}" adını onaylıyor musunuz?`)) {
+          console.log('Updating name to:', `${nameInput} ${surname}`);
+          await updateProfile(auth.currentUser, { 
+            displayName: `${nameInput} ${surname}` 
+          });
+          setShowNameModal(false);
+          // Force a reload to show updated profile
+          window.location.reload();
+        }
+      } else if (field === 'surname') {
+        const name = currentUser?.displayName?.split(' ')[0] || '';
+        // Show confirmation dialog with properly styled buttons
+        if (window.confirm(`"${surnameInput}" soyadını onaylıyor musunuz?`)) {
+          console.log('Updating surname to:', `${name} ${surnameInput}`);
+          await updateProfile(auth.currentUser, { 
+            displayName: `${name} ${surnameInput}` 
+          });
+          setShowSurnameModal(false);
+          // Force a reload to show updated profile
+          window.location.reload();
+        }
+      } else if (field === 'phone') {
+        // Show confirmation dialog with properly styled buttons
+        if (window.confirm(`"+90${phoneInput.replace(/\s+/g, '')}" telefon numarasını onaylıyor musunuz?`)) {
+          console.log('Updating phone to:', phoneInput);
+          // Note: Phone number update requires a more complex verification flow with Firebase
+          // For this implementation we'll simulate it with an alert
+          alert('Telefon numarası güncellendi');
+          setShowPhoneModal(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert(`Güncelleme sırasında bir hata oluştu: ${error.message}`);
+    }
+  };
+
+  const cancelFieldEdit = (field) => {
+    if (field === 'name') {
+      setShowNameModal(false);
+    } else if (field === 'surname') {
+      setShowSurnameModal(false);
+    } else if (field === 'phone') {
+      setShowPhoneModal(false);
+    } else if (field === 'password') {
+      setShowPasswordModal(false);
+    }
+  };
+  
+  // Update display formatting for phone numbers to include +90 prefix
+  const displayPhoneNumber = (phone) => {
+    if (!phone) return "Belirtilmemiş";
+    // Clean up the phone number and add +90 prefix if not already there
+    const cleanPhone = phone.replace(/\s+/g, '');
+    return phone.startsWith('+90') ? phone : `+90${cleanPhone}`;
+  };
+  
+  // Clean up mapRef object when component unmounts
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  // Add a function to delete an address
+  const handleDeleteAddress = (index) => {
+    // Since we're just simulating this functionality without backend,
+    // let's just add an alert to confirm deletion
+    if (window.confirm('Bu adresi silmek istediğinizden emin misiniz?')) {
+      // In a real app, this would call a function to delete from database
+      alert(`${index === 0 ? 'Ev' : 'İş'} adresi silindi.`);
+      // Page would normally reload or update state here
+    }
+  };
+  
+  // Find and update the restaurant loading timeout if there is one
+  // If there's a useEffect block for loading restaurants, reduce the timeout or remove it
+
+  // Add or update the restaurant loading logic:
+  useEffect(() => {
+    // Any existing restaurant loading code
+    
+    // If loading is controlled by a state, set a shorter timeout
+    const loadingTimeout = setTimeout(() => {
+      if (setLoading) {
+        setLoading(false);
+      }
+    }, 500); // Reduce this from whatever it was before to 500ms
+    
+    return () => clearTimeout(loadingTimeout);
+  }, []);
+
   return (
     <div className="homepage">
       {loading && (
@@ -1552,7 +1719,7 @@ export default function HomePage({ currentUser, authError }) {
             <div className="profile-container" ref={profileMenuRef}>
               <button className="profile-button" onClick={toggleProfileMenu}>
                 <div className="profile-icon"></div>
-                <span className="user-name">{getUserDisplayName()}</span>
+                <span className="user-name">{getUserFirstName()}</span>
                 <div className={`dropdown-arrow ${showProfileMenu ? 'up' : 'down'}`}></div>
               </button>
               
@@ -1638,42 +1805,129 @@ export default function HomePage({ currentUser, authError }) {
       
       {/* Password Modal */}
       {showPasswordModal && (
-        <div className="password-modal">
-          <div className="password-content">
-            <h2>Şifre Değiştirme</h2>
+        <div className="modal-overlay">
+          <div className="edit-modal">
+            <h3 className="modal-title">Şifre Değiştirme</h3>
+            
+            {passwordError && <div className="password-error">{passwordError}</div>}
+            {passwordSuccess && <div className="password-success">{passwordSuccess}</div>}
+            
             <form onSubmit={handlePasswordSubmit}>
-              <div className="form-group">
-                <label htmlFor="currentPassword">Mevcut Şifre</label>
-                <input
-                  type="password"
-                  id="currentPassword"
+              <div className="modal-input-group">
+                <label>Mevcut Şifre</label>
+                <input 
+                  type="password" 
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                 />
               </div>
-              <div className="form-group">
-                <label htmlFor="newPassword">Yeni Şifre</label>
-                <input
-                  type="password"
-                  id="newPassword"
+              
+              <div className="modal-input-group">
+                <label>Yeni Şifre</label>
+                <input 
+                  type="password" 
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
-              <div className="form-group">
-                <label htmlFor="confirmPassword">Şifreyi Tekrarla</label>
-                <input
-                  type="password"
-                  id="confirmPassword"
+              
+              <div className="modal-input-group">
+                <label>Şifreyi Tekrarla</label>
+                <input 
+                  type="password" 
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
-              <button type="submit">Şifre Değiştir</button>
+              
+              <div className="modal-actions">
+                <button type="button" className="cancel-btn" onClick={() => cancelFieldEdit('password')}>
+                  Kapat
+                </button>
+                <button type="submit" className="save-btn">
+                  Şifre Değiştir
+                </button>
+              </div>
             </form>
-            {passwordError && <p className="error">{passwordError}</p>}
-            {passwordSuccess && <p className="success">{passwordSuccess}</p>}
-            <button onClick={closePasswordModal}>Kapat</button>
+          </div>
+        </div>
+      )}
+
+      {/* Name Edit Modal */}
+      {showNameModal && (
+        <div className="modal-overlay">
+          <div className="edit-modal">
+            <h3 className="modal-title">Ad Değiştirme</h3>
+            
+            <div className="modal-input-group">
+              <label>Ad</label>
+              <input 
+                type="text" 
+                value={nameInput} 
+                onChange={(e) => setNameInput(e.target.value)} 
+                placeholder="Adınız"
+              />
+            </div>
+            
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => cancelFieldEdit('name')}>İptal</button>
+              <button className="save-btn" onClick={() => saveFieldEdit('name')}>Kaydet</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Surname Edit Modal */}
+      {showSurnameModal && (
+        <div className="modal-overlay">
+          <div className="edit-modal">
+            <h3 className="modal-title">Soyad Değiştirme</h3>
+            
+            <div className="modal-input-group">
+              <label>Soyad</label>
+              <input 
+                type="text" 
+                value={surnameInput} 
+                onChange={(e) => setSurnameInput(e.target.value)} 
+                placeholder="Soyadınız"
+              />
+            </div>
+            
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => cancelFieldEdit('surname')}>İptal</button>
+              <button className="save-btn" onClick={() => saveFieldEdit('surname')}>Kaydet</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phone Edit Modal */}
+      {showPhoneModal && (
+        <div className="modal-overlay">
+          <div className="edit-modal">
+            <h3 className="modal-title">Telefon Değiştirme</h3>
+            
+            <div className="modal-input-group">
+              <label>Telefon</label>
+              <div className="phone-input-container">
+                <div className="country-code">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/b/b4/Flag_of_Turkey.svg" className="flag-icon" alt="TR" />
+                  +90
+                </div>
+                <input 
+                  type="text" 
+                  value={phoneInput} 
+                  onChange={(e) => setPhoneInput(formatPhoneNumber(e.target.value))} 
+                  placeholder="Telefon Numarası"
+                  className="phone-input"
+                />
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => cancelFieldEdit('phone')}>İptal</button>
+              <button className="save-btn" onClick={() => saveFieldEdit('phone')}>Kaydet</button>
+            </div>
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './RestaurantGrid.css';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function RestaurantGrid({ category, selectedKitchenTypes = [] }) {
@@ -25,16 +25,51 @@ export default function RestaurantGrid({ category, selectedKitchenTypes = [] }) 
           console.log("Restoranlar koleksiyonu boş, veri bulunamadı!");
           setRestaurants([]);
         } else {
-          const restaurantData = querySnapshot.docs.map(doc => {
-            console.log("Belge ID:", doc.id);
-            return {
-              id: doc.id,
-              ...doc.data()
-            };
-          });
+          const restaurantsArray = [];
           
-          console.log("Firestore'dan çekilen tüm restoranlar:", restaurantData);
-          setRestaurants(restaurantData);
+          // For each restaurant, fetch reviews to calculate average rating
+          for (const restaurantDoc of querySnapshot.docs) {
+            const restaurantId = restaurantDoc.id;
+            const restaurantInfo = restaurantDoc.data();
+            
+            // Fetch reviews
+            const reviewsRef = collection(db, "restaurants", restaurantId, "reviews");
+            const reviewsSnapshot = await getDocs(reviewsRef);
+            
+            let totalRating = 0;
+            let reviewCount = reviewsSnapshot.size;
+            
+            // Calculate average rating
+            if (reviewCount > 0) {
+              reviewsSnapshot.docs.forEach(reviewDoc => {
+                const reviewData = reviewDoc.data();
+                if (reviewData.rating) {
+                  totalRating += reviewData.rating;
+                }
+              });
+              
+              const averageRating = totalRating / reviewCount;
+              
+              // Add restaurant with calculated rating and review count
+              restaurantsArray.push({
+                id: restaurantId,
+                ...restaurantInfo,
+                calculatedRating: averageRating.toFixed(1),
+                reviewCount: reviewCount
+              });
+            } else {
+              // If no reviews, use default rating or add without rating
+              restaurantsArray.push({
+                id: restaurantId,
+                ...restaurantInfo,
+                calculatedRating: restaurantInfo.puan || '4.5',
+                reviewCount: 0
+              });
+            }
+          }
+          
+          console.log("Firestore'dan çekilen tüm restoranlar:", restaurantsArray);
+          setRestaurants(restaurantsArray);
         }
       } catch (error) {
         console.error("Restoranları çekerken hata oluştu:", error);
@@ -108,6 +143,15 @@ export default function RestaurantGrid({ category, selectedKitchenTypes = [] }) 
   // Filtreye göre restoranları filtrele
   const filteredRestaurants = restaurants.filter(matchesKitchenTypes);
 
+  useEffect(() => {
+    // Reduce the loading time to 500ms maximum
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -151,7 +195,8 @@ export default function RestaurantGrid({ category, selectedKitchenTypes = [] }) 
               <div className="restaurant-footer">
                 <div className="restaurant-rating">
                   <span className="star">★</span>
-                  <span>{restaurant.puan || 4.5}</span>
+                  <span>{restaurant.calculatedRating || restaurant.puan || 4.5}</span>
+                  <span className="review-count">({restaurant.reviewCount || 0})</span>
                 </div>
                 <div className="restaurant-delivery">
                   <span>{restaurant.teslimatSuresi || '25-40 dk'}</span>

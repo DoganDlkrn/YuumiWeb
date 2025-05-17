@@ -109,13 +109,19 @@
 .restaurant-rating {
   display: flex;
   align-items: center;
-  gap: 5px;
   font-size: 14px;
   color: #333;
 }
 
 .star {
-  color: #ffcc00;
+  color: #FFCC00;
+  margin-right: 2px;
+}
+
+.review-count {
+  font-size: 12px;
+  color: #666;
+  margin-left: 3px;
 }
 
 .restaurant-delivery {

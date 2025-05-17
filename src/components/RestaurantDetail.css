@@ -1,30 +1,33 @@
+/* Restaurant Detay Sayfası */
 .restaurant-detail-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   background-color: #fff;
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
+body, html {
+  background-color: #fff !important;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Restaurant header */
 .restaurant-header {
   display: flex;
   align-items: flex-start;
   margin-bottom: 30px;
-}
-
-.back-button {
-  background: none;
-  border: none;
-  color: #00B2FF;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 4px;
-  margin-right: 20px;
-  font-weight: 600;
-}
-
-.back-button:hover {
-  background-color: rgba(0, 178, 255, 0.1);
+  position: relative;
+  padding-left: 0;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
 }
 
 .restaurant-header-info {
@@ -32,9 +35,10 @@
 }
 
 .restaurant-name {
-  font-size: 26px;
-  margin: 0 0 5px 0;
+  font-size: 28px;
+  font-weight: 700;
   color: #333;
+  margin: 0 0 8px 0;
 }
 
 .restaurant-category {
@@ -43,84 +47,169 @@
   margin: 0 0 10px 0;
 }
 
+/* Restaurant meta bilgileri */
 .restaurant-meta {
   display: flex;
-  gap: 15px;
+  align-items: center;
   margin-bottom: 10px;
-  align-items: center;
-}
-
-.restaurant-rating,
-.delivery-time,
-.delivery-fee {
-  font-size: 14px;
-  color: #333;
-  display: flex;
-  align-items: center;
 }
 
 .restaurant-rating {
-  color: #f8ce0b;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  color: #333;
+  margin-right: 15px;
+}
+
+/* Yıldız ikonu için stil */
+.restaurant-rating .star {
+  color: #FFCC00;
+  margin-right: 4px;
+}
+
+.review-count {
+  color: #666;
+  font-size: 14px;
+  margin-left: 5px;
+}
+
+.delivery-time {
+  color: #555;
+  margin-right: 15px;
 }
 
 .delivery-fee {
+  color: #2ecc71;
+}
+
+.restaurant-address, .restaurant-hours {
+  color: #666;
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+/* Restaurant tabs */
+.restaurant-tabs {
+  display: flex;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 20px;
+  position: relative;
+  justify-content: center;
+  gap: 40px;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+.restaurant-tab {
+  padding: 12px 24px;
+  font-size: 16px;
+  background: none;
+  border: none;
+  position: relative;
+  color: #666;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.restaurant-tab:hover {
   color: #00B2FF;
 }
 
-.restaurant-address {
-  font-size: 14px;
-  color: #666;
-  margin: 0 0 5px 0;
+.restaurant-tab.active {
+  color: #00B2FF;
 }
 
-.restaurant-hours {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
+.restaurant-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #00B2FF;
+  border-radius: 3px 3px 0 0;
 }
 
+/* Restaurant içerik */
 .restaurant-content {
-  display: flex;
-  gap: 30px;
+  margin-bottom: 80px;
+  background-color: #fff;
+  min-height: 300px;
+  flex: 1;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  padding-bottom: 100px;
 }
 
+/* Category heading should be hidden */
+.menu-category .category-title {
+  display: none;
+}
+
+/* Menu container */
+.menu-container {
+  background-color: #fff;
+}
+
+/* Kategori listesi */
 .category-list {
-  width: 200px;
-  flex-shrink: 0;
+  display: flex;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 25px;
   position: sticky;
-  top: 20px;
-  align-self: flex-start;
+  top: 0;
+  background-color: #fff;
+  z-index: 5;
+}
+
+.category-list::-webkit-scrollbar {
+  height: 6px;
+}
+
+.category-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.category-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.category-list::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }
 
 .category-button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 12px 15px;
+  background: #f5f5f5;
   border: none;
-  background: none;
-  font-size: 15px;
   color: #555;
-  border-radius: 8px;
+  font-size: 15px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  white-space: nowrap;
+  margin-right: 10px;
   cursor: pointer;
-  margin-bottom: 5px;
+  transition: all 0.2s;
 }
 
 .category-button:hover {
-  background-color: #f5f5f5;
+  background-color: #e0f3ff;
+  color: #00B2FF;
 }
 
 .category-button.active {
   background-color: #00B2FF;
   color: white;
-  font-weight: 500;
 }
 
-.menu-container {
-  flex: 1;
-}
-
+/* Menü kategorileri */
 .menu-category {
   display: none;
   margin-bottom: 30px;
@@ -131,105 +220,84 @@
 }
 
 .category-title {
-  font-size: 22px;
-  color: #00B2FF;
-  margin: 0 0 15px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
 }
 
+/* Menü öğeleri */
 .menu-items {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 15px;
 }
 
 .menu-item {
+  display: flex;
+  justify-content: space-between;
   padding: 15px;
   border-radius: 8px;
-  border: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  height: 100%;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.menu-item:hover {
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
 }
 
 .menu-item-info {
   flex: 1;
-  margin-bottom: 15px;
 }
 
 .menu-item-name {
   font-size: 16px;
+  font-weight: 600;
   color: #333;
   margin: 0 0 5px 0;
 }
 
 .menu-item-description {
   font-size: 14px;
-  color: #777;
+  color: #666;
   margin: 0;
-  line-height: 1.4;
 }
 
 .menu-item-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: auto;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  min-width: 100px;
 }
 
 .menu-item-price {
-  font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   color: #333;
+  margin-bottom: 8px;
 }
 
-.add-to-cart-button {
-  background-color: #00B2FF;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 12px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.add-to-cart-button:hover {
-  background-color: #0095d9;
-}
-
-.loading-container,
-.error-container {
-  text-align: center;
-  padding: 100px 20px;
-}
-
-.loading-spinner,
-.error-message {
-  font-size: 18px;
-  color: #666;
-  margin-bottom: 20px;
-}
-
-/* Quantity Controls */
+/* Miktar kontrolleri */
 .quantity-controls {
   display: flex;
   align-items: center;
 }
 
 .quantity-btn {
-  background-color: #f0f0f0;
-  border: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 16px;
+  width: 25px;
+  height: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: #f5f5f5;
+  border: none;
+  border-radius: 50%;
   cursor: pointer;
-  color: #333;
+  font-size: 16px;
+  color: #555;
   transition: all 0.2s;
 }
 
@@ -238,60 +306,76 @@
 }
 
 .remove-btn {
-  background-color: #f8f8f8;
-  color: #00B2FF;
+  background-color: #ffede9;
+  color: #ff5a3c;
+}
+
+.remove-btn:hover {
+  background-color: #ffdcd5;
 }
 
 .quantity {
   margin: 0 8px;
-  font-weight: 600;
+  font-size: 14px;
   color: #333;
 }
 
 .add-to-cart-button {
-  transition: all 0.2s;
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 8px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.add-to-cart-button:hover {
+  background-color: #0095d9;
 }
 
 .add-to-cart-button.animate {
-  transform: scale(1.2);
-  background-color: #009de0;
+  transform: scale(1.1);
 }
 
-/* Cart Button */
+/* Sepet */
 .cart-button {
   position: fixed;
   bottom: 20px;
   right: 20px;
+  display: flex;
+  align-items: center;
   background-color: #00B2FF;
   color: white;
   border: none;
   border-radius: 30px;
   padding: 12px 20px;
-  display: flex;
-  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 178, 255, 0.3);
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
   z-index: 100;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
 .cart-button:hover {
-  background-color: #009de0;
+  background-color: #0095d9;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 16px rgba(0, 178, 255, 0.4);
 }
 
 .cart-icon {
-  width: 24px;
-  height: 24px;
-  margin-right: 10px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='21' r='1'%3E%3C/circle%3E%3Ccircle cx='20' cy='21' r='1'%3E%3C/circle%3E%3Cpath d='M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6'%3E%3C/path%3E%3C/svg%3E");
+  width: 22px;
+  height: 22px;
   background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-right: 10px;
 }
 
 .cart-count {
+  font-weight: bold;
+  font-size: 14px;
   background-color: white;
   color: #00B2FF;
   border-radius: 50%;
@@ -300,50 +384,39 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: bold;
   margin-right: 8px;
 }
 
 .cart-total {
-  font-weight: 600;
+  font-weight: bold;
 }
 
-/* Cart Preview */
 .cart-preview {
   position: fixed;
   bottom: 80px;
   right: 20px;
-  width: 320px;
   background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-  z-index: 100;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  width: 320px;
+  max-height: 450px;
+  overflow-y: auto;
+  z-index: 99;
   padding: 15px;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  border: 1px solid #eee;
 }
 
 .cart-preview-title {
   font-size: 18px;
-  margin: 0 0 15px 0;
+  font-weight: 600;
   color: #333;
+  margin: 0 0 15px 0;
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
 }
 
 .cart-items {
-  max-height: 320px;
+  max-height: 300px;
   overflow-y: auto;
   margin-bottom: 15px;
 }
@@ -358,17 +431,15 @@
 .cart-item-info {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .cart-item-quantity {
-  display: inline-block;
-  background-color: #f0f0f0;
+  background-color: #f5f5f5;
   padding: 3px 6px;
   border-radius: 4px;
-  color: #333;
   font-size: 12px;
-  margin-right: 8px;
-  font-weight: 600;
+  color: #555;
 }
 
 .cart-item-name {
@@ -377,42 +448,40 @@
 }
 
 .cart-item-price {
+  font-size: 14px;
   font-weight: 600;
   color: #333;
-  font-size: 14px;
 }
 
 .cart-total-row {
   display: flex;
   justify-content: space-between;
   padding: 10px 0;
+  margin-bottom: 15px;
+  border-top: 1px solid #eee;
   font-size: 16px;
-  font-weight: 500;
-  color: #333;
-  border-top: 2px solid #eee;
-  margin-top: 5px;
-}
-
-.cart-preview-total {
-  font-weight: 700;
-  color: #00B2FF;
+  font-weight: 600;
 }
 
 .cart-actions {
   display: flex;
-  gap: 10px;
+  justify-content: space-between;
   margin-top: 15px;
+  gap: 10px;
+}
+
+.clear-cart-btn, .checkout-btn {
+  border: none;
+  border-radius: 4px;
+  padding: 10px 15px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
 }
 
 .clear-cart-btn {
-  background-color: #f0f0f0;
-  border: none;
-  padding: 10px;
-  border-radius: 8px;
-  flex: 1;
+  background-color: #f5f5f5;
   color: #666;
-  font-weight: 500;
-  cursor: pointer;
 }
 
 .clear-cart-btn:hover {
@@ -421,61 +490,599 @@
 
 .checkout-btn {
   background-color: #00B2FF;
-  border: none;
-  padding: 10px;
-  border-radius: 8px;
-  flex: 2;
   color: white;
-  font-weight: 500;
-  cursor: pointer;
 }
 
 .checkout-btn:hover {
-  background-color: #009de0;
+  background-color: #0095d9;
 }
 
-/* Responsive styles for the cart */
-@media (max-width: 768px) {
-  .cart-button {
-    width: calc(100% - 40px);
-    justify-content: center;
-  }
-
-  .cart-preview {
-    width: calc(100% - 40px);
-    bottom: 80px;
-  }
+/* Boş menü mesajı */
+.no-menu-message {
+  text-align: center;
+  padding: 50px 0;
+  color: #666;
+  font-size: 16px;
 }
 
-/* Responsive Styles */
+/* Loading spinner */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.loading-spinner {
+  color: #00B2FF;
+  font-size: 18px;
+}
+
+/* Error */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.error-message {
+  font-size: 18px;
+  color: #e74c3c;
+  margin-bottom: 20px;
+}
+
+/* Yorum bileşeni stilleri */
+.reviews-container {
+  padding: 20px 0;
+}
+
+.reviews-header {
+  margin-bottom: 30px;
+}
+
+.reviews-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.review-form {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.review-form h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 15px 0;
+}
+
+.rating-selector {
+  margin-bottom: 15px;
+}
+
+.rating-selector p {
+  font-size: 16px;
+  color: #555;
+  margin: 0 0 10px 0;
+}
+
+.required {
+  color: #e74c3c;
+  margin-left: 3px;
+}
+
+.rating-error {
+  color: #e74c3c;
+  font-size: 13px;
+  margin-top: 5px;
+  margin-bottom: 0;
+}
+
+.star-rating {
+  display: flex;
+  gap: 5px;
+  direction: rtl; /* Sağdan sola akış */
+}
+
+/* Yıldız hover özelliği - 1'den n'ye kadar tüm yıldızları etkiler */
+.star-rating .rating-star:hover,
+.star-rating .rating-star.selected {
+  color: #FFCC00;
+}
+
+.star-rating .rating-star:hover ~ .rating-star {
+  color: #ddd;
+}
+
+/* Yıldız hover için mouseOver davranışı - tüm önceki yıldızlar da seçilir */
+.star-rating {
+  display: flex;
+  gap: 5px;
+  direction: rtl; /* Sağdan sola akış */
+}
+
+/* Hem hover hem selected yıldızlar için stil belirlemesi */
+.star-rating .rating-star {
+  font-size: 26px;
+  cursor: pointer;
+  color: #ddd;
+  transition: color 0.2s;
+}
+
+.star-rating .rating-star:hover,
+.star-rating .rating-star:hover ~ .rating-star,
+.star-rating .rating-star.selected,
+.star-rating .rating-star.selected ~ .rating-star {
+  color: #FFCC00;
+}
+
+.review-form textarea {
+  width: 100%;
+  height: 120px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 15px;
+  resize: vertical;
+}
+
+.review-form textarea:focus {
+  outline: none;
+  border-color: #00B2FF;
+}
+
+.submit-review {
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-review:hover {
+  background-color: #0095d9;
+}
+
+.submit-review:disabled {
+  background-color: #bbb;
+  cursor: not-allowed;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.review-item {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 20px;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.reviewer-info {
+  display: flex;
+  gap: 15px;
+}
+
+.reviewer-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #00B2FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reviewer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  font-size: 22px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+}
+
+.reviewer-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.reviewer-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.review-date {
+  font-size: 12px;
+  color: #999;
+}
+
+.review-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.review-rating .star {
+  color: #ddd;
+  font-size: 18px;
+}
+
+.review-rating .star.filled {
+  color: #FFCC00;
+}
+
+.review-rating span:last-child {
+  font-weight: 500;
+  color: #333;
+}
+
+.review-content {
+  color: #555;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.review-content p {
+  margin: 0;
+}
+
+.no-reviews {
+  text-align: center;
+  padding: 30px 0;
+  color: #666;
+}
+
+/* Restaurant info tab */
+.restaurant-info-tab {
+  padding: 20px 0;
+}
+
+.info-section {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.info-section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 20px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.info-item {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.info-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 15px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.address-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300B2FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'%3E%3C/path%3E%3Ccircle cx='12' cy='10' r='3'%3E%3C/circle%3E%3C/svg%3E");
+}
+
+.time-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300B2FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12 6 12 12 16 14'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.phone-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300B2FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z'%3E%3C/path%3E%3C/svg%3E");
+}
+
+.category-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300B2FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 8l-5 5-5-5-5 5-5-5'/%3E%3Cpath d='M21 16l-5 5-5-5-5 5-5-5'/%3E%3C/svg%3E");
+}
+
+.info-content {
+  flex: 1;
+}
+
+.info-content h4 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.info-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* Sepetim sayfası */
+.cart-page {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.cart-page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 30px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.cart-items-list {
+  margin-bottom: 30px;
+}
+
+.cart-item-card {
+  display: flex;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.cart-item-info {
+  flex: 1;
+}
+
+.cart-item-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.cart-item-restaurant {
+  font-size: 14px;
+  color: #00B2FF;
+  margin-bottom: 10px;
+}
+
+.cart-item-price {
+  font-weight: 600;
+  color: #333;
+}
+
+.cart-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.order-summary {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.order-summary-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.summary-label {
+  color: #666;
+}
+
+.summary-value {
+  font-weight: 600;
+  color: #333;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.total-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.total-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #00B2FF;
+}
+
+.checkout-button {
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 15px;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.checkout-button:hover {
+  background-color: #0095d9;
+}
+
+.empty-cart {
+  text-align: center;
+  padding: 50px 0;
+}
+
+.empty-cart-message {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.continue-shopping {
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.continue-shopping:hover {
+  background-color: #0095d9;
+}
+
+/* Responsive design improvements */
 @media (max-width: 768px) {
-  .restaurant-content {
+  .restaurant-header {
     flex-direction: column;
+    align-items: flex-start;
+    padding-left: 30px;
   }
   
-  .category-list {
-    width: 100%;
-    display: flex;
-    overflow-x: auto;
-    margin-bottom: 20px;
-    position: static;
+  .restaurant-header-info {
+    margin-left: 0;
+  }
+  
+  .restaurant-name {
+    font-size: 24px;
+  }
+  
+  .restaurant-tabs {
+    gap: 20px;
+  }
+  
+  .restaurant-tab {
+    padding: 10px 15px;
+    font-size: 14px;
   }
   
   .category-button {
-    width: auto;
-    flex-shrink: 0;
-    white-space: nowrap;
+    padding: 8px 16px;
+    font-size: 14px;
   }
   
-  .menu-items {
-    grid-template-columns: 1fr;
-  }
-  
-  .restaurant-header {
+  .menu-item {
     flex-direction: column;
   }
   
-  .back-button {
-    margin-bottom: 15px;
+  .menu-item-actions {
+    margin-top: 10px;
+    align-self: flex-end;
   }
+  
+  .cart-button {
+    width: calc(100% - 40px);
+    justify-content: center;
+    border-radius: 8px;
+  }
+  
+  .cart-preview {
+    width: calc(100% - 40px);
+    bottom: 75px;
+    right: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .restaurant-detail-container {
+    padding: 15px;
+  }
+  
+  .restaurant-header {
+    padding-left: 25px;
+  }
+  
+  .restaurant-tabs {
+    gap: 10px;
+  }
+  
+  .restaurant-tab {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+/* Only hide specific buttons */
+button.menu-standalone,
+button.menu-button,
+button.menu-button-blue,
+.restaurant-detail-container > button:not(.back-button):not(.cart-button):not(.quantity-btn):not(.add-to-cart-button):not(.clear-cart-btn):not(.checkout-btn):not(.restaurant-nav-tab):not([class*="category"]):not([class*="review"]),
+.restaurant-content ~ button:not(.cart-button):not(.quantity-btn):not(.add-to-cart-button):not(.clear-cart-btn):not(.checkout-btn) {
+  display: none !important;
+}
+
+/* Custom button that appears at the bottom */
+.menu-button-with-line,
+.info-tab + button,
+.restaurant-detail-container > .menu-button-blue,
+.restaurant-detail-container > a.menu-button-blue,
+a.button.menu-btn,
+a[href="#menu"],
+.menu-selection,
+*[data-content="menu-button"],
+.restaurant-content ~ button[id]:not(.cart-button),
+a.menu-button {
+  display: none !important;
+}
+
+/* Ensure menu tab underline is preserved properly */
+.restaurant-tab.restaurant-nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #00B2FF;
+  border-radius: 3px 3px 0 0;
+  display: block;
 } 

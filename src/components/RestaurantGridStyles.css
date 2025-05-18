@@ -1,0 +1,61 @@
+/* Restaurant grid styling */
+.restaurant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  padding: 15px 0;
+  justify-content: start; /* Left align the grid items */
+  margin-left: 0;
+  width: 100%;
+}
+
+.restaurant-selection-view {
+  width: 100%;
+  padding: 0 15px;
+}
+
+.weekly-plan-container .restaurant-selection-view {
+  padding-left: 0;
+  padding-right: 15px;
+}
+
+.content-with-filter .restaurant-grid {
+  padding-left: 0;
+}
+
+/* Weekly Plan specific styling */
+.weekly-plan-container .restaurant-grid {
+  justify-content: start;
+  margin-left: 0;
+  width: 100%;
+}
+
+/* Make sure font sizes are consistent between daily and weekly views */
+.weekly-plan-container .restaurant-name {
+  font-size: 16px; /* Match daily view size */
+}
+
+.weekly-plan-container .restaurant-category {
+  font-size: 14px;
+}
+
+.weekly-plan-container .restaurant-hours {
+  font-size: 13px;
+}
+
+.weekly-plan-container .restaurant-address {
+  font-size: 12px;
+}
+
+.weekly-plan-container .restaurant-rating {
+  font-size: 13px;
+}
+
+.weekly-plan-container .star {
+  font-size: 14px;
+}
+
+.weekly-plan-container .delivery-time,
+.weekly-plan-container .delivery-fee {
+  font-size: 12px;
+} 

@@ -10,6 +10,7 @@ import { auth } from "../firebase";
 import { signOut, updateProfile, updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import MapComponent from './MapComponent';
+import WeeklyPlan from './WeeklyPlan';
 
 export default function HomePage({ currentUser, authError }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -634,10 +635,14 @@ export default function HomePage({ currentUser, authError }) {
             </div>
             
             <div className="main-content">
-              <RestaurantGrid 
-                category={activeCategory} 
-                selectedKitchenTypes={selectedKitchenTypes} 
-              />
+              {activeCategory === 'haftalik' ? (
+                <WeeklyPlan />
+              ) : (
+                <RestaurantGrid 
+                  category={activeCategory} 
+                  selectedKitchenTypes={selectedKitchenTypes} 
+                />
+              )}
             </div>
           </div>
         );

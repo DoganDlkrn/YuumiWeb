@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './RestaurantGrid.css';
+import './RestaurantGridStyles.css';
+import './DailyViewStyles.css';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -21,56 +23,51 @@ export default function RestaurantGrid({ category, selectedKitchenTypes = [] }) 
         
         console.log("Firestore sorgusu tamamlandı, belge sayısı:", querySnapshot.size);
         
-        if (querySnapshot.empty) {
-          console.log("Restoranlar koleksiyonu boş, veri bulunamadı!");
-          setRestaurants([]);
-        } else {
-          const restaurantsArray = [];
+        const restaurantsArray = [];
+        
+        // For each restaurant, fetch reviews to calculate average rating
+        for (const restaurantDoc of querySnapshot.docs) {
+          const restaurantId = restaurantDoc.id;
+          const restaurantInfo = restaurantDoc.data();
           
-          // For each restaurant, fetch reviews to calculate average rating
-          for (const restaurantDoc of querySnapshot.docs) {
-            const restaurantId = restaurantDoc.id;
-            const restaurantInfo = restaurantDoc.data();
+          // Fetch reviews
+          const reviewsRef = collection(db, "restaurants", restaurantId, "reviews");
+          const reviewsSnapshot = await getDocs(reviewsRef);
+          
+          let totalRating = 0;
+          let reviewCount = reviewsSnapshot.size;
+          
+          // Calculate average rating
+          if (reviewCount > 0) {
+            reviewsSnapshot.docs.forEach(reviewDoc => {
+              const reviewData = reviewDoc.data();
+              if (reviewData.rating) {
+                totalRating += reviewData.rating;
+              }
+            });
             
-            // Fetch reviews
-            const reviewsRef = collection(db, "restaurants", restaurantId, "reviews");
-            const reviewsSnapshot = await getDocs(reviewsRef);
+            const averageRating = totalRating / reviewCount;
             
-            let totalRating = 0;
-            let reviewCount = reviewsSnapshot.size;
-            
-            // Calculate average rating
-            if (reviewCount > 0) {
-              reviewsSnapshot.docs.forEach(reviewDoc => {
-                const reviewData = reviewDoc.data();
-                if (reviewData.rating) {
-                  totalRating += reviewData.rating;
-                }
-              });
-              
-              const averageRating = totalRating / reviewCount;
-              
-              // Add restaurant with calculated rating and review count
-              restaurantsArray.push({
-                id: restaurantId,
-                ...restaurantInfo,
-                calculatedRating: averageRating.toFixed(1),
-                reviewCount: reviewCount
-              });
-            } else {
-              // If no reviews, use default rating or add without rating
-              restaurantsArray.push({
-                id: restaurantId,
-                ...restaurantInfo,
-                calculatedRating: restaurantInfo.puan || '4.5',
-                reviewCount: 0
-              });
-            }
+            // Add restaurant with calculated rating and review count
+            restaurantsArray.push({
+              id: restaurantId,
+              ...restaurantInfo,
+              calculatedRating: averageRating.toFixed(1),
+              reviewCount: reviewCount
+            });
+          } else {
+            // If no reviews, use default rating or add without rating
+            restaurantsArray.push({
+              id: restaurantId,
+              ...restaurantInfo,
+              calculatedRating: restaurantInfo.puan || '4.5',
+              reviewCount: 0
+            });
           }
-          
-          console.log("Firestore'dan çekilen tüm restoranlar:", restaurantsArray);
-          setRestaurants(restaurantsArray);
         }
+        
+        console.log("Firestore'dan çekilen tüm restoranlar:", restaurantsArray);
+        setRestaurants(restaurantsArray);
       } catch (error) {
         console.error("Restoranları çekerken hata oluştu:", error);
         setRestaurants([]);
@@ -143,15 +140,6 @@ export default function RestaurantGrid({ category, selectedKitchenTypes = [] }) 
   // Filtreye göre restoranları filtrele
   const filteredRestaurants = restaurants.filter(matchesKitchenTypes);
 
-  useEffect(() => {
-    // Reduce the loading time to 500ms maximum
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
   if (loading) {
     return (
       <div className="loading-container">
@@ -178,30 +166,44 @@ export default function RestaurantGrid({ category, selectedKitchenTypes = [] }) 
             className="restaurant-card"
             onClick={() => handleRestaurantClick(restaurant.id)}
           >
-            {restaurant.logoUrl ? (
-              <img src={restaurant.logoUrl} alt={restaurant.isim} className="restaurant-image" />
-            ) : (
-              <div className="restaurant-image-placeholder">
-                <span className="placeholder-text">{restaurant.isim?.charAt(0) || "R"}</span>
+            <div className="restaurant-header">
+              {restaurant.logoUrl ? (
+                <img 
+                  src={restaurant.logoUrl} 
+                  alt={restaurant.isim} 
+                  className="restaurant-image" 
+                />
+              ) : (
+                <img 
+                  src="https://via.placeholder.com/100" 
+                  alt={restaurant.isim} 
+                  className="restaurant-image" 
+                />
+              )}
+            </div>
+            
+            <div className="restaurant-name-section">
+              <h3 className="restaurant-name">{restaurant.isim}</h3>
+              <div className="restaurant-category">{restaurant.kategori}</div>
+            </div>
+            
+            <div className="restaurant-details">
+              <div className="restaurant-hours">
+                {restaurant.calismaSaatleri || restaurant.calismaSaatleri1 || "12:00 - 22:00"}
               </div>
-            )}
-            <div className="restaurant-info">
-              <h3>{restaurant.isim}</h3>
-              <p className="restaurant-category">{restaurant.kategori}</p>
-              <div className="restaurant-details">
-                <p className="restaurant-hours">{restaurant.calismaSaatleri || restaurant.calismaSaatleri1}</p>
-                <p className="restaurant-location">{restaurant.adres}</p>
+              <div className="restaurant-address">
+                {restaurant.adres}
               </div>
-              <div className="restaurant-footer">
-                <div className="restaurant-rating">
-                  <span className="star">★</span>
-                  <span>{restaurant.calculatedRating || restaurant.puan || 4.5}</span>
-                  <span className="review-count">({restaurant.reviewCount || 0})</span>
-                </div>
-                <div className="restaurant-delivery">
-                  <span>{restaurant.teslimatSuresi || '25-40 dk'}</span>
-                  <span className="free-delivery">Ücretsiz</span>
-                </div>
+            </div>
+            
+            <div className="restaurant-meta-row">
+              <div className="restaurant-rating">
+                <span className="star">★</span> {restaurant.calculatedRating || restaurant.puan || '4.5'} 
+                <span className="rating-count">({restaurant.reviewCount || '0'})</span>
+              </div>
+              <div className="delivery-info">
+                <span className="delivery-time">{restaurant.teslimatSuresi || '25-40 dk'}</span>
+                <span className="delivery-fee">Ücretsiz</span>
               </div>
             </div>
           </div>

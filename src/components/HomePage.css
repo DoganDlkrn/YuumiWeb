@@ -1680,11 +1680,26 @@ html, body, .homepage {
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: none; /* Remove transition effect */
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 15px;
 }
 
+/* Remove hover effect */
 .restaurant-card:hover {
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Keep same shadow as default state */
+  transform: none; /* Remove any transform effect */
+}
+
+/* Update restaurant card in restaurant grid */
+.restaurant-grid .restaurant-card {
+  transition: none; /* Remove transition */
+}
+
+.restaurant-grid .restaurant-card:hover {
+  transform: none; /* Remove transform on hover */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Keep same shadow */
 }
 
 /* Mutfak search input styling */
@@ -2024,4 +2039,1118 @@ button[data-action="cancel"] {
   border: 1px solid #ddd !important;
   outline: none !important;
   box-shadow: none !important;
+}
+
+/* Weekly Meal Planning Styles */
+.weekly-plan-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.weekly-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.weekly-plan-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+}
+
+.day-navigation {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin-bottom: 25px;
+  position: relative;
+  padding: 0 50px;
+}
+
+.day-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+}
+
+.day-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.day-circle.active {
+  background-color: #00B2FF;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 178, 255, 0.3);
+}
+
+.day-circle.completed {
+  background-color: #e5f7ff;
+  color: #00B2FF;
+}
+
+.day-circle.completed::after {
+  content: '✓';
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 20px;
+  height: 20px;
+  background-color: #00B2FF;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border: 2px solid white;
+}
+
+.day-circle:hover {
+  transform: scale(1.05);
+}
+
+.day-name {
+  font-size: 12px;
+  color: #666;
+}
+
+.day-connector {
+  position: absolute;
+  top: 20px;
+  left: 60px;
+  right: 60px;
+  height: 2px;
+  background-color: #eee;
+  z-index: 1;
+}
+
+.day-nav-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+}
+
+.day-nav-arrow.prev {
+  left: 0;
+}
+
+.day-nav-arrow.next {
+  right: 0;
+}
+
+.day-nav-arrow:hover {
+  background-color: #e0e0e0;
+}
+
+.day-content {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.day-content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.day-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.day-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.add-plan-btn {
+  background-color: #f5f5f5;
+  color: #555;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.add-plan-btn:hover {
+  background-color: #e5e5e5;
+}
+
+/* Plan slots */
+.plan-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Fix plan slot colors and styles */
+.plan-slot {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  margin-bottom: 15px;
+}
+
+.plan-slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #eee;
+}
+
+.plan-name {
+  font-weight: 600;
+  font-size: 16px;
+  color: #555;
+}
+
+.time-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f9f9f9;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.add-plan-btn {
+  background-color: #f5f5f5;
+  color: #555;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.add-plan-btn:hover {
+  background-color: #e5e5e5;
+}
+
+.add-meal-btn {
+  width: 100%;
+  padding: 15px;
+  border: 2px dashed #ddd;
+  border-radius: 6px;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+  background-color: #f9f9f9;
+}
+
+.add-meal-btn:hover {
+  border-color: #00B2FF;
+  color: #00B2FF;
+  background-color: #f0f9ff;
+}
+
+.complete-day-btn {
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.complete-day-btn:hover {
+  background-color: #0095d9;
+}
+
+.weekly-plan-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.weekly-total {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.weekly-checkout-btn {
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 25px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.weekly-checkout-btn:hover {
+  background-color: #0095d9;
+}
+
+/* Restaurant Selection View */
+.restaurant-selection-view {
+  width: 100%;
+}
+
+.restaurant-selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #333;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.complete-selection-btn {
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.restaurant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.restaurant-card {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.restaurant-info {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background-color: #f9f9f9;
+  gap: 15px;
+}
+
+.restaurant-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.restaurant-menu {
+  padding: 15px;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.item-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-name {
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.item-price {
+  color: #00B2FF;
+  font-weight: 600;
+}
+
+.add-item-btn {
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.add-item-btn:hover {
+  background-color: #0095d9;
+}
+
+/* Fix time input styling */
+.time-input {
+  background-color: #f5f5f5 !important;
+  color: #555 !important;
+  border: 1px solid #ddd !important;
+  border-radius: 4px !important;
+  padding: 6px 10px !important;
+  font-size: 14px !important;
+  outline: none !important;
+}
+
+.time-input:focus {
+  border-color: #00B2FF !important;
+}
+
+.time-selector label {
+  color: #555;
+}
+
+/* Update restaurant selection view */
+.restaurant-selection-view {
+  width: 100%;
+  padding-bottom: 30px;
+}
+
+.restaurant-selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 20px;
+}
+
+.selection-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.back-btn {
+  background-color: #f5f5f5;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #555;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+  background-color: #e5e5e5;
+}
+
+.continue-next-btn {
+  background-color: #f5f5f5;
+  color: #555;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.continue-next-btn:hover {
+  background-color: #e5e5e5;
+}
+
+.complete-selection-btn {
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.restaurant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  padding: 15px 0;
+  justify-content: start; /* Left align the grid items */
+  margin-left: 0; /* Ensure left margin is 0 */
+  width: 100%;
+}
+
+.restaurant-card {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: none; /* Remove transition */
+  background-color: white;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.restaurant-card:hover {
+  transform: none; /* Remove any transform effect */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Keep same shadow */
+}
+
+.restaurant-header {
+  width: 100%;
+  height: 120px;
+  overflow: hidden;
+}
+
+.restaurant-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.restaurant-name-section {
+  padding: 12px 15px 5px;
+  border-bottom: none;
+}
+
+.restaurant-name {
+  margin: 0;
+  font-size: 16px; /* Match daily view size */
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 3px;
+}
+
+.restaurant-category {
+  font-size: 14px;
+  color: #00B2FF;
+  margin-bottom: 3px;
+}
+
+.restaurant-details {
+  padding: 0 15px;
+  margin-bottom: 10px;
+}
+
+.restaurant-hours {
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.restaurant-address {
+  font-size: 12px;
+  color: #777;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.restaurant-meta-row {
+  padding: 0 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.restaurant-rating {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #333;
+  justify-content: flex-start; /* Left align */
+}
+
+.star {
+  color: #FFD700;
+  margin-right: 3px;
+  font-size: 16px;
+}
+
+.rating-count {
+  font-size: 13px;
+  color: #777;
+  margin-left: 3px;
+}
+
+.delivery-info {
+  text-align: right;
+  justify-content: flex-end; /* Right align */
+}
+
+.delivery-time {
+  display: block;
+  font-size: 13px;
+  color: #333;
+}
+
+.delivery-fee {
+  display: block;
+  font-size: 12px;
+  color: #4CAF50;
+}
+
+.restaurant-menu {
+  padding: 15px;
+  border-top: 1px solid #eee;
+  flex-grow: 1;
+}
+
+.restaurant-menu h4 {
+  margin-bottom: 10px;
+  color: #555;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.item-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 3px;
+}
+
+.item-price {
+  color: #00B2FF;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.add-item-btn {
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.2s;
+}
+
+.add-item-btn:hover {
+  background-color: #0095d9;
+}
+
+/* Fix day navigation and restore completion indicator */
+.day-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.day-circle.active {
+  background-color: #00B2FF;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 178, 255, 0.3);
+}
+
+.day-circle.completed {
+  background-color: #e5f7ff;
+  color: #00B2FF;
+}
+
+.day-circle.completed::after {
+  content: '✓';
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 20px;
+  height: 20px;
+  background-color: #00B2FF;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border: 2px solid white;
+}
+
+.day-circle:hover {
+  transform: scale(1.05);
+}
+
+/* Fix meal selections styling */
+.selections-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meal-selection {
+  display: flex;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 10px;
+  align-items: center;
+  position: relative;
+  border: 1px solid #f0f0f0;
+}
+
+.meal-thumbnail {
+  width: 50px;
+  height: 50px;
+  border-radius: 5px;
+  object-fit: cover;
+  margin-right: 15px;
+}
+
+.meal-info {
+  flex: 1;
+}
+
+.meal-name {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.meal-restaurant {
+  font-size: 13px;
+  color: #777;
+}
+
+.meal-price {
+  font-weight: 600;
+  color: #00B2FF;
+  margin-right: 15px;
+}
+
+.remove-meal-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(255, 77, 79, 0.1);
+  color: #ff4d4f;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+.remove-meal-btn:hover {
+  background-color: rgba(255, 77, 79, 0.2);
+}
+
+.add-more-btn {
+  padding: 8px;
+  background-color: #f5f5f5;
+  border: none;
+  border-radius: 4px;
+  color: #555;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s;
+  font-size: 13px;
+}
+
+.add-more-btn:hover {
+  background-color: #e5e5e5;
+}
+
+/* Time Picker Styles */
+.time-picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.time-picker-modal {
+  background-color: white;
+  border-radius: 12px;
+  width: 320px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  animation: modal-appear 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.time-picker-header {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.time-picker-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.current-time-note {
+  font-size: 12px;
+  color: #777;
+  margin-top: 6px;
+}
+
+.time-picker-content {
+  padding: 16px;
+}
+
+.time-picker-columns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}
+
+.time-picker-column {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none; /* For Internet Explorer and Edge */
+}
+
+.time-picker-column::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.time-picker-label {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.time-options-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 0;
+}
+
+.time-option {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  font-size: 20px;
+  color: #333;
+  transition: all 0.2s;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.time-option:hover {
+  background-color: #f5f5f5;
+}
+
+.time-option.selected {
+  background-color: #e5f7ff;
+  color: #00B2FF;
+  font-weight: 600;
+  font-size: 22px;
+}
+
+.time-picker-separator {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 10px;
+  padding-bottom: 10px;
+}
+
+.time-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+  gap: 10px;
+}
+
+.time-cancel-btn {
+  padding: 10px 16px;
+  border: 1px solid #ddd;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+}
+
+.time-confirm-btn {
+  padding: 10px 20px;
+  background-color: #00B2FF;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.time-confirm-btn.disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Selected time styling */
+.selected-time {
+  background-color: #f5f5f5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.selected-time:hover {
+  background-color: #e5e5e5;
+}
+
+.time-note {
+  font-size: 11px;
+  color: #777;
+  margin-top: 4px;
+  font-weight: normal;
+}
+
+/* Highlight current time slot */
+.time-current {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 40px;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: rgba(0, 178, 255, 0.05);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Restaurant grid layout */
+.restaurant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  padding: 15px 0;
+  justify-content: start; /* Left align the grid items */
+  margin-left: 0; /* Ensure left margin is 0 */
+}
+
+/* Quick add section for restaurant cards */
+.quick-add-section {
+  padding: 10px 15px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 5px;
+  border-top: 1px solid #f5f5f5;
+}
+
+.quick-add-btn {
+  padding: 8px 12px;
+  background-color: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+}
+
+.quick-add-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.quick-add-btn::before {
+  content: "+";
+  display: inline-block;
+  margin-right: 6px;
+  font-weight: bold;
+  font-size: 15px;
+  color: #00B2FF;
+}
+
+/* Weekly Plan specific styling */
+.weekly-plan-container .restaurant-grid {
+  justify-content: start;
+  margin-left: 0;
+  width: 100%;
+}
+
+/* Make sure font sizes are consistent between daily and weekly views */
+.weekly-plan-container .restaurant-name {
+  font-size: 16px; /* Match daily view size */
+}
+
+.weekly-plan-container .restaurant-category {
+  font-size: 14px;
+}
+
+.weekly-plan-container .restaurant-hours {
+  font-size: 13px;
+}
+
+.weekly-plan-container .restaurant-address {
+  font-size: 12px;
+}
+
+.weekly-plan-container .restaurant-rating {
+  font-size: 13px;
+}
+
+.weekly-plan-container .star {
+  font-size: 14px;
+}
+
+.weekly-plan-container .delivery-time,
+.weekly-plan-container .delivery-fee {
+  font-size: 12px;
+}
+
+.restaurant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  padding: 15px 0;
+  justify-content: start; /* Left align the grid items */
+  margin-left: 0;
+  width: 100%;
+}
+
+.restaurant-selection-view {
+  width: 100%;
+  padding: 0 15px;
+}
+
+.weekly-plan-container .restaurant-selection-view {
+  padding-left: 0;
+  padding-right: 15px;
+}
+
+.content-with-filter .restaurant-grid {
+  padding-left: 0;
 }

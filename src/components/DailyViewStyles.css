@@ -1,0 +1,52 @@
+/* Daily View Styles - Match with Weekly View */
+
+/* Override font sizes to match weekly view exactly */
+.restaurant-card .restaurant-name {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  margin-bottom: 3px !important;
+}
+
+.restaurant-card .restaurant-category {
+  font-size: 14px !important;
+  color: #00B2FF !important;
+  margin-bottom: 3px !important;
+}
+
+.restaurant-card .restaurant-hours {
+  font-size: 13px !important;
+  color: #333 !important;
+  margin-bottom: 5px !important;
+}
+
+.restaurant-card .restaurant-address {
+  font-size: 12px !important;
+  color: #777 !important;
+}
+
+.restaurant-card .restaurant-rating {
+  font-size: 13px !important;
+  color: #333 !important;
+}
+
+.restaurant-card .star {
+  font-size: 14px !important;
+  color: #FFD700 !important;
+  margin-right: 3px !important;
+}
+
+.restaurant-card .rating-count {
+  font-size: 13px !important;
+  color: #777 !important;
+  margin-left: 3px !important;
+}
+
+.restaurant-card .delivery-time {
+  font-size: 13px !important;
+  color: #333 !important;
+}
+
+.restaurant-card .delivery-fee {
+  font-size: 12px !important;
+  color: #4CAF50 !important;
+} 

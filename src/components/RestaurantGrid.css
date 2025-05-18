@@ -137,12 +137,13 @@
   font-size: 12px;
 }
 
-/* Yükleme Göstergesi */
+/* Loading and Empty State Styles */
 .loading-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 300px;
+  height: 300px;
+  width: 100%;
 }
 
 .loading-spinner {
@@ -151,12 +152,11 @@
   font-weight: 500;
 }
 
-/* Restoran Yok Mesajı */
 .no-restaurants {
   text-align: center;
-  padding: 50px 0;
-  color: #666;
+  padding: 50px 20px;
   font-size: 16px;
+  color: #666;
 }
 
 /* Mobil Uyumluluk */

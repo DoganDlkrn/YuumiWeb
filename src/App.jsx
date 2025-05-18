@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import HomePage from "./components/HomePage";
 import RestaurantDetail from "./components/RestaurantDetail";
+import CartPage from "./components/CartPage";
 import { auth } from "./firebase";
 import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
 
@@ -53,6 +54,7 @@ function App() {
         <Route path="/odeme-yontemlerim" element={<HomePage currentUser={user} authError={error} />} />
         <Route path="/iletisim-tercihlerim" element={<HomePage currentUser={user} authError={error} />} />
         <Route path="/hesabim" element={<HomePage currentUser={user} authError={error} />} />
+        <Route path="/sepetim" element={<CartPage />} />
         <Route path="/restaurant/:id" element={<RestaurantDetail />} />
         <Route path="/restaurant/:id/menu" element={<RestaurantDetail initialTab="menu" />} />
         <Route path="*" element={<Navigate to="/" replace />} />

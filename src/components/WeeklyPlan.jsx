@@ -23,6 +23,7 @@ export default function WeeklyPlan() {
   const [showCart, setShowCart] = useState(false);
   const [cart, setCart] = useState({});
   const [showCartActions, setShowCartActions] = useState(false);
+  const [headerCart, setHeaderCart] = useState([]);  // Add this new state for the header cart
 
   const navigate = useNavigate();
 
@@ -275,9 +276,95 @@ export default function WeeklyPlan() {
       return updatedCart;
     });
     
+    // Add to header cart as well
+    setHeaderCart(prev => [...prev, cartItem]);
+    
+    // Save to sessionStorage for global access
+    const storedCart = sessionStorage.getItem('yuumiCart') || '[]';
+    let parsedCart = [];
+    try {
+      parsedCart = JSON.parse(storedCart);
+    } catch (e) {
+      console.error('Error parsing cart:', e);
+      parsedCart = [];
+    }
+    
+    // Check if the item already exists in the cart
+    const existingItemIndex = parsedCart.findIndex(i => i.itemId === cartItem.itemId);
+    if (existingItemIndex !== -1) {
+      // Increase quantity
+      parsedCart[existingItemIndex].quantity += 1;
+    } else {
+      // Add new item
+      parsedCart.push(cartItem);
+    }
+    
+    // Save updated cart
+    sessionStorage.setItem('yuumiCart', JSON.stringify(parsedCart));
+    
     // Sepet aksiyonlarını göster
     setShowCartActions(true);
+    
+    // Update the cart icon in the header
+    updateHeaderCartIcon();
   };
+
+  // Function to update the cart icon in header
+  const updateHeaderCartIcon = () => {
+    // Find the cart icon in the header
+    const cartIcon = document.querySelector('.basket-icon');
+    if (!cartIcon) return;
+    
+    // Create or update the cart count badge
+    let badge = document.querySelector('.cart-badge');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.className = 'cart-badge';
+      cartIcon.parentNode.appendChild(badge);
+    }
+    
+    // Calculate total items in header cart
+    const totalItems = headerCart.length;
+    badge.textContent = totalItems;
+    badge.style.display = totalItems > 0 ? 'flex' : 'none';
+  };
+  
+  // Update header cart when component mounts/unmounts
+  useEffect(() => {
+    // Add CSS for the cart badge
+    const style = document.createElement('style');
+    style.textContent = `
+      .cart-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: #00B2FF;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Update the cart icon on mount
+    updateHeaderCartIcon();
+    
+    // Clean up when component unmounts
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+  
+  // Update the header cart icon whenever headerCart changes
+  useEffect(() => {
+    updateHeaderCartIcon();
+  }, [headerCart]);
 
   // Sepetin içeriğini plana ekle
   const addCartToSelection = () => {
@@ -313,6 +400,9 @@ export default function WeeklyPlan() {
         return updatedCart;
       });
       
+      // Clear header cart as well
+      setHeaderCart([]);
+      
       setShowCartActions(false);
       setShowRestaurantSelection(false);
       setSelectedPlanInfo(null);
@@ -332,42 +422,51 @@ export default function WeeklyPlan() {
       return updatedCart;
     });
     
+    // Clear header cart as well
+    setHeaderCart([]);
+    
     setShowCartActions(false);
   };
 
   // Sonraki plana veya güne devam et
   const continueToNextPlanOrDay = () => {
+    // Önce sepeti seçimlere ekle
     addCartToSelection();
     
     if (!selectedPlanInfo) return;
     
-    const { dayIndex, planId } = selectedPlanInfo;
-    const day = weeklyPlan[dayIndex];
-    const planIndex = day.plans.findIndex(plan => plan.id === planId);
+    // Günü Bitir işlevselliği - Bir sonraki güne geçiş
+    // Mevcut günü tamamlanmış olarak işaretle
+    const updatedPlan = [...weeklyPlan];
+    updatedPlan[activeDayIndex].completed = true;
+    setWeeklyPlan(updatedPlan);
     
-    // Aynı gün içinde başka bir plan var mı?
-    if (planIndex < day.plans.length - 1) {
-      // Bir sonraki plana geç
-      setSelectedPlanInfo({
-        dayIndex,
-        planId: day.plans[planIndex + 1].id
-      });
-      
-      setShowRestaurantSelection(true);
-    } else if (dayIndex < weeklyPlan.length - 1) {
-      // Bir sonraki günün ilk planına geç
-      setSelectedPlanInfo({
-        dayIndex: dayIndex + 1,
-        planId: weeklyPlan[dayIndex + 1].plans[0].id
-      });
-      
-      setActiveDayIndex(dayIndex + 1);
-      setShowRestaurantSelection(true);
-    } else {
-      // Son günün son planındayız, ana ekrana dön
-      setShowRestaurantSelection(false);
-      setSelectedPlanInfo(null);
+    // Bir sonraki güne geç (son gün değilse)
+    if (activeDayIndex < weeklyPlan.length - 1) {
+      setActiveDayIndex(activeDayIndex + 1);
     }
+    
+    // Sepeti kapat
+    setShowCart(false);
+    
+    // Restaurant selection view'ı kapat
+    setShowRestaurantSelection(false);
+    setSelectedPlanInfo(null);
+  };
+
+  // Ayrı bir fonksiyon olarak "Güne Devam Et" için continueInSameDay
+  const continueInSameDay = () => {
+    // Önce sepeti seçimlere ekle
+    addCartToSelection();
+    
+    // Sepeti kapat
+    setShowCart(false);
+    
+    // Restaurant selection view'ı kapat
+    setShowRestaurantSelection(false);
+    
+    // Aynı güne yeni bir plan ekle
+    addNewPlan();
   };
 
   // Sepet içeriğini göster
@@ -395,6 +494,9 @@ export default function WeeklyPlan() {
       
       return updatedCart;
     });
+    
+    // Also remove from header cart
+    setHeaderCart(prev => prev.filter(item => item.id !== itemId));
   };
 
   // Mevcut plandaki sepet öğelerinin sayısını hesapla
@@ -567,6 +669,11 @@ export default function WeeklyPlan() {
     }
   };
 
+  // Add a function to navigate to cart page
+  const goToCart = () => {
+    navigate('/sepetim');
+  };
+
   // Loading state
   if (loading && showRestaurantSelection) {
     return (
@@ -584,61 +691,21 @@ export default function WeeklyPlan() {
             <button className="back-btn" onClick={closeRestaurantSelection}>
               ← Geri
             </button>
-            <h2>Restoran Seç</h2>
-            <div className="selection-actions">
-              {/* Sepet butonu */}
-              <div className="cart-button-container">
-                <button 
-                  className={`cart-button ${getCurrentCartItemCount() > 0 ? 'has-items' : ''}`}
-                  onClick={toggleCart}
-                >
-                  Sepet ({getCurrentCartItemCount()})
-                </button>
-                
-                {/* Sepet içeriği */}
-                {showCart && getCurrentCartItemCount() > 0 && (
-                  <div className="cart-dropdown">
-                    <div className="cart-header">
-                      <h3>Sepetim</h3>
-                      <button className="close-cart" onClick={toggleCart}>×</button>
-                    </div>
-                    <div className="cart-items">
-                      {selectedPlanInfo && cart[`${selectedPlanInfo.dayIndex}-${selectedPlanInfo.planId}`]?.map(item => (
-                        <div key={item.id} className="cart-item">
-                          <div className="cart-item-info">
-                            <div className="cart-item-name">{item.itemName}</div>
-                            <div className="cart-item-restaurant">{item.restaurantName}</div>
-                          </div>
-                          <div className="cart-item-price">{item.price}</div>
-                          <button 
-                            className="remove-cart-item"
-                            onClick={() => removeCartItem(item.id)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="cart-footer">
-                      <div className="cart-total">
-                        Toplam: ₺{calculateCartTotal().toFixed(2)}
-                      </div>
-                      <div className="cart-actions">
-                        <button className="clear-cart" onClick={clearCart}>Sepeti Temizle</button>
-                        <button className="checkout-cart" onClick={addCartToSelection}>Onayla</button>
-                      </div>
-                    </div>
-                  </div>
+            <div className="selection-header-content">
+              <h2 className="selection-day-title">
+                {selectedPlanInfo ? (
+                  <>
+                    {weeklyPlan[selectedPlanInfo.dayIndex].name} - {weeklyPlan[selectedPlanInfo.dayIndex].date}
+                  </>
+                ) : 'Restoran Seç'}
+              </h2>
+              <div className="selection-time">
+                {selectedPlanInfo && (
+                  <span>{weeklyPlan[selectedPlanInfo.dayIndex].plans.find(p => p.id === selectedPlanInfo.planId)?.time} için planlama yapıyorsunuz</span>
                 )}
               </div>
-              
-              <button 
-                className="continue-next-btn" 
-                onClick={continueToNextPlanOrDay}
-                disabled={getCurrentCartItemCount() === 0}
-              >
-                Sonraki ile Devam Et →
-              </button>
+            </div>
+            <div className="selection-actions">
               <button 
                 className="complete-selection-btn" 
                 onClick={completeMealSelection}
@@ -714,31 +781,12 @@ export default function WeeklyPlan() {
           
           {/* Sepet aksiyon butonu */}
           {showCartActions && getCurrentCartItemCount() > 0 && (
-            <div className="cart-actions-footer">
-              <div className="cart-info">
-                <span className="cart-item-count">{getCurrentCartItemCount()} ürün</span>
-                <span className="cart-total-price">₺{calculateCartTotal().toFixed(2)}</span>
+            <div className="cart-floating-btn" onClick={goToCart}>
+              <div className="cart-btn-content">
+                <span>{getCurrentCartItemCount()} ürün</span>
+                <span className="cart-btn-price">₺{calculateCartTotal().toFixed(2)}</span>
               </div>
-              <div className="cart-buttons">
-                <button 
-                  className="continue-shopping"
-                  onClick={() => setShowCartActions(false)}
-                >
-                  Alışverişe Devam Et
-                </button>
-                <button 
-                  className="view-cart"
-                  onClick={toggleCart}
-                >
-                  Sepeti Görüntüle
-                </button>
-                <button 
-                  className="complete-cart"
-                  onClick={addCartToSelection}
-                >
-                  Siparişi Tamamla
-                </button>
-              </div>
+              <div className="cart-btn-label">Sepete Git</div>
             </div>
           )}
         </div>

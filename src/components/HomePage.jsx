@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./HomePage.css";
 import logoImg from "../assets/Y.png";
-import basketImg from "../assets/basket.png";
+import basketImg from "../assets/cartblack.png";
 import orderImg from "../assets/order.png"; // Sipariş ikonu için order.png eklendi
 import LoginModal from "./LoginModal";
 import RegisterModal from "./RegisterModal";
@@ -1675,6 +1675,42 @@ export default function HomePage({ currentUser, authError }) {
     return () => clearTimeout(loadingTimeout);
   }, []);
 
+  const [cartItemCount, setCartItemCount] = useState(0);
+  
+  // Load cart items count from sessionStorage
+  useEffect(() => {
+    const updateCartCount = () => {
+      const storedCart = sessionStorage.getItem('yuumiCart');
+      if (storedCart) {
+        try {
+          const parsedCart = JSON.parse(storedCart);
+          setCartItemCount(parsedCart.length);
+        } catch (error) {
+          console.error('Error parsing cart data:', error);
+        }
+      }
+    };
+    
+    // Update count immediately
+    updateCartCount();
+    
+    // Listen for storage events (for cross-tab syncing)
+    window.addEventListener('storage', updateCartCount);
+    
+    // Set up interval to check cart periodically
+    const interval = setInterval(updateCartCount, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', updateCartCount);
+      clearInterval(interval);
+    };
+  }, []);
+  
+  // Navigate to cart
+  const goToCart = () => {
+    navigate('/sepetim');
+  };
+
   return (
     <div className="homepage">
       {loading && (
@@ -1720,6 +1756,11 @@ export default function HomePage({ currentUser, authError }) {
         </div>
         
         <div className="nav-right">
+          <div className="cart-icon-container" onClick={goToCart}>
+            <img src={basketImg} alt="Sepet" className="basket-icon" />
+            {cartItemCount > 0 && <span className="cart-count-badge">{cartItemCount}</span>}
+          </div>
+          
           {currentUser ? (
             <div className="profile-container" ref={profileMenuRef}>
               <button className="profile-button" onClick={toggleProfileMenu}>
@@ -1785,7 +1826,6 @@ export default function HomePage({ currentUser, authError }) {
               </button>
             </>
           )}
-          <img src={basketImg} alt="Sepet" className="basket-icon" />
         </div>
       </header>
       

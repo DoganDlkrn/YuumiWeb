@@ -281,6 +281,7 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
 
   // Sepete ürün ekle
   const addToCart = (item) => {
+    // Add to local cart state
     setCart(prevCart => {
       // Ürün sepette var mı kontrol et
       const existingItemIndex = prevCart.findIndex(cartItem => cartItem.id === item.id);
@@ -298,6 +299,42 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
         return [...prevCart, { ...item, quantity: 1 }];
       }
     });
+    
+    // Add to sessionStorage for global cart
+    const storedCart = sessionStorage.getItem('yuumiCart') || '[]';
+    let parsedCart = [];
+    try {
+      parsedCart = JSON.parse(storedCart);
+    } catch (e) {
+      console.error('Error parsing cart:', e);
+      parsedCart = [];
+    }
+    
+    // Check if the item already exists in the cart
+    const cartItem = {
+      id: `item-${Date.now()}`,
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.isim || restaurant.name,
+      restaurantImage: restaurant.image || restaurant.logoUrl || 'https://via.placeholder.com/100',
+      itemId: item.id,
+      itemName: item.isim || item.name,
+      price: typeof item.fiyat === 'number' ? 
+        `₺${item.fiyat.toFixed(2)}` : 
+        item.fiyat || `₺${item.price?.toFixed(2) || '0.00'}`,
+      quantity: 1,
+    };
+    
+    const existingItemIndex = parsedCart.findIndex(i => i.itemId === cartItem.itemId);
+    if (existingItemIndex !== -1) {
+      // Increase quantity
+      parsedCart[existingItemIndex].quantity += 1;
+    } else {
+      // Add new item
+      parsedCart.push(cartItem);
+    }
+    
+    // Save updated cart
+    sessionStorage.setItem('yuumiCart', JSON.stringify(parsedCart));
     
     // Eklendi animasyonu göster
     setShowAddedAnimation(item.id);
@@ -348,6 +385,11 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
   // Sepet önizlemesini aç/kapat
   const toggleCartPreview = () => {
     setShowCartPreview(!showCartPreview);
+  };
+
+  // Go to cart page
+  const goToCart = () => {
+    navigate('/sepetim');
   };
 
   // Yeni yorum ekle
@@ -702,7 +744,7 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
       {/* Sepet butonu ve önizleme */}
       {cart.length > 0 && (
         <>
-          <button className="cart-button" onClick={toggleCartPreview}>
+          <button className="cart-button" onClick={goToCart}>
             <div className="cart-icon"></div>
             <span className="cart-count">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
             <span className="cart-total">₺{cartTotal.toFixed(2)}</span>
@@ -728,7 +770,7 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
               </div>
               <div className="cart-actions">
                 <button className="clear-cart-btn" onClick={clearCart}>Sepeti Temizle</button>
-                <button className="checkout-btn" onClick={proceedToCheckout}>Sipariş Ver</button>
+                <button className="checkout-btn" onClick={goToCart}>Sepete Git</button>
               </div>
             </div>
           )}

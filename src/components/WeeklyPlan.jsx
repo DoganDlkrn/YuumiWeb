@@ -27,6 +27,19 @@ export default function WeeklyPlan() {
 
   const navigate = useNavigate();
 
+  // Load weekly plan from localStorage on component mount
+  useEffect(() => {
+    const savedPlan = localStorage.getItem('yuumiWeeklyPlan');
+    if (savedPlan) {
+      try {
+        const parsedPlan = JSON.parse(savedPlan);
+        setWeeklyPlan(parsedPlan);
+      } catch (error) {
+        console.error('Error parsing saved weekly plan:', error);
+      }
+    }
+  }, []);
+
   // Fetch restaurants from Firebase
   useEffect(() => {
     const fetchRestaurants = async () => {
@@ -134,6 +147,9 @@ export default function WeeklyPlan() {
     updatedPlan[activeDayIndex].completed = true;
     setWeeklyPlan(updatedPlan);
     
+    // Save to localStorage
+    localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
+    
     // Move to next day automatically if not the last day
     if (activeDayIndex < weeklyPlan.length - 1) {
       setActiveDayIndex(activeDayIndex + 1);
@@ -160,6 +176,9 @@ export default function WeeklyPlan() {
     });
     
     setWeeklyPlan(updatedPlan);
+    
+    // Save to localStorage
+    localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
   };
 
   // Open time picker
@@ -204,6 +223,9 @@ export default function WeeklyPlan() {
     if (planIndex >= 0) {
       currentDay.plans[planIndex].time = time;
       setWeeklyPlan(updatedPlan);
+      
+      // Save to localStorage
+      localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
     }
   };
 
@@ -307,6 +329,32 @@ export default function WeeklyPlan() {
     
     // Update the cart icon in the header
     updateHeaderCartIcon();
+    
+    // Also add to weekly plan right away to show in Plan 1
+    const updatedPlan = [...weeklyPlan];
+    const planIndex = updatedPlan[dayIndex].plans.findIndex(plan => plan.id === planId);
+    
+    if (planIndex >= 0) {
+      // Check if the item is already in the plan
+      const existingSelection = updatedPlan[dayIndex].plans[planIndex].selections.find(
+        s => s.itemName === cartItem.itemName && s.restaurantName === cartItem.restaurantName
+      );
+      
+      if (!existingSelection) {
+        updatedPlan[dayIndex].plans[planIndex].selections.push({
+          id: cartItem.id,
+          restaurantName: cartItem.restaurantName,
+          restaurantImage: cartItem.restaurantImage,
+          itemName: cartItem.itemName,
+          price: cartItem.price
+        });
+        
+        setWeeklyPlan(updatedPlan);
+        
+        // Save weekly plan to localStorage
+        localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
+      }
+    }
   };
 
   // Function to update the cart icon in header
@@ -393,6 +441,9 @@ export default function WeeklyPlan() {
       
       setWeeklyPlan(updatedPlan);
       
+      // Save weekly plan to localStorage to persist between navigation
+      localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
+      
       // Sepeti temizle
       setCart(prevCart => {
         const updatedCart = { ...prevCart };
@@ -440,6 +491,9 @@ export default function WeeklyPlan() {
     const updatedPlan = [...weeklyPlan];
     updatedPlan[activeDayIndex].completed = true;
     setWeeklyPlan(updatedPlan);
+    
+    // Save to localStorage
+    localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
     
     // Bir sonraki güne geç (son gün değilse)
     if (activeDayIndex < weeklyPlan.length - 1) {
@@ -551,6 +605,9 @@ export default function WeeklyPlan() {
       });
       
       setWeeklyPlan(updatedPlan);
+      
+      // Save to localStorage
+      localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
     }
   };
 
@@ -564,7 +621,11 @@ export default function WeeklyPlan() {
       currentDay.plans[planIndex].selections = currentDay.plans[planIndex].selections.filter(
         selection => selection.id !== selectionId
       );
+      
       setWeeklyPlan(updatedPlan);
+      
+      // Save to localStorage
+      localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
     }
   };
 

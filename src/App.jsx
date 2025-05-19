@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import HomePage from "./components/HomePage";
 import RestaurantDetail from "./components/RestaurantDetail";
 import CartPage from "./components/CartPage";
+import OrdersPage from "./components/OrdersPage";
 import { auth } from "./firebase";
 import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
 
@@ -50,7 +51,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage currentUser={user} authError={error} />} />
         <Route path="/adreslerim" element={<HomePage currentUser={user} authError={error} />} />
-        <Route path="/siparislerim" element={<HomePage currentUser={user} authError={error} />} />
+        <Route path="/siparislerim" element={<OrdersPage />} />
+        <Route path="/gecmis-siparislerim" element={<OrdersPage />} />
         <Route path="/odeme-yontemlerim" element={<HomePage currentUser={user} authError={error} />} />
         <Route path="/iletisim-tercihlerim" element={<HomePage currentUser={user} authError={error} />} />
         <Route path="/hesabim" element={<HomePage currentUser={user} authError={error} />} />

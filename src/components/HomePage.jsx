@@ -1756,11 +1756,6 @@ export default function HomePage({ currentUser, authError }) {
         </div>
         
         <div className="nav-right">
-          <div className="cart-icon-container" onClick={goToCart}>
-            <img src={basketImg} alt="Sepet" className="basket-icon" />
-            {cartItemCount > 0 && <span className="cart-count-badge">{cartItemCount}</span>}
-          </div>
-          
           {currentUser ? (
             <div className="profile-container" ref={profileMenuRef}>
               <button className="profile-button" onClick={toggleProfileMenu}>
@@ -1811,21 +1806,16 @@ export default function HomePage({ currentUser, authError }) {
               )}
             </div>
           ) : (
-            <>
-              <button 
-                className="btn login-btn" 
-                onClick={openLoginModal}
-              >
-                Giriş Yap
-              </button>
-              <button 
-                className="btn register-btn" 
-                onClick={openRegisterModal}
-              >
-                Kayıt Ol
-              </button>
-            </>
+            <div className="auth-buttons">
+              <button className="login-button" onClick={openLoginModal}>Giriş Yap</button>
+              <button className="register-button" onClick={openRegisterModal}>Kaydol</button>
+            </div>
           )}
+          
+          <div className="cart-icon-container" onClick={goToCart}>
+            <img src={basketImg} alt="Sepet" className="basket-icon" />
+            {cartItemCount > 0 && <span className="cart-count-badge">{cartItemCount}</span>}
+          </div>
         </div>
       </header>
       

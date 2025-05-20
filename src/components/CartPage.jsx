@@ -8,7 +8,25 @@ import './CartPage.css';
 export default function CartPage() {
   const [cart, setCart] = useState([]);
   const [cartTotal, setCartTotal] = useState(0);
+  const [weeklyPlanData, setWeeklyPlanData] = useState(null);
   const navigate = useNavigate();
+
+  // Load weekly plan data for referencing plan names
+  useEffect(() => {
+    const loadWeeklyPlan = () => {
+      const savedPlan = localStorage.getItem('yuumiWeeklyPlan');
+      if (savedPlan) {
+        try {
+          const parsedPlan = JSON.parse(savedPlan);
+          setWeeklyPlanData(parsedPlan);
+        } catch (error) {
+          console.error('Error parsing weekly plan data:', error);
+        }
+      }
+    };
+
+    loadWeeklyPlan();
+  }, []);
 
   // Load cart items from sessionStorage when component mounts
   useEffect(() => {
@@ -63,6 +81,47 @@ export default function CartPage() {
     sessionStorage.removeItem('yuumiCart');
   };
 
+  // Get plan name from plan info
+  const getPlanLabel = (planInfo) => {
+    if (!planInfo || !weeklyPlanData) return null;
+    
+    const { dayIndex, planId } = planInfo;
+    
+    if (weeklyPlanData[dayIndex] && weeklyPlanData[dayIndex].plans) {
+      const plan = weeklyPlanData[dayIndex].plans.find(p => p.id === planId);
+      if (plan) {
+        return `${weeklyPlanData[dayIndex].name} - ${plan.name}`;
+      }
+    }
+    
+    return null;
+  };
+
+  // Group cart items by restaurant and plan
+  const groupedCartItems = () => {
+    const grouped = {};
+    
+    cart.forEach(item => {
+      const key = item.planInfo 
+        ? `${item.restaurantId}-${item.planInfo.dayIndex}-${item.planInfo.planId}`
+        : `${item.restaurantId}-regular`;
+      
+      if (!grouped[key]) {
+        grouped[key] = {
+          restaurantId: item.restaurantId,
+          restaurantName: item.restaurantName,
+          restaurantImage: item.restaurantImage,
+          planInfo: item.planInfo,
+          items: []
+        };
+      }
+      
+      grouped[key].items.push(item);
+    });
+    
+    return Object.values(grouped);
+  };
+
   // Proceed to checkout
   const proceedToCheckout = () => {
     if (!checkUserLogin()) return;
@@ -89,7 +148,8 @@ export default function CartPage() {
         id: item.id,
         name: item.itemName,
         price: item.price,
-        quantity: item.quantity
+        quantity: item.quantity,
+        planInfo: item.planInfo
       });
       
       restaurantGroups[item.restaurantId].total += price * item.quantity;
@@ -155,6 +215,11 @@ export default function CartPage() {
     return `₺${numValue.toFixed(2)}`;
   };
 
+  // Go to weekly plan
+  const goToWeeklyPlan = () => {
+    navigate('/');
+  };
+
   return (
     <div className="cart-page-container">
       <div className="cart-header-container">
@@ -170,35 +235,47 @@ export default function CartPage() {
       {cart.length > 0 ? (
         <div className="cart-content">
           <div className="cart-items-wrapper">
-            <div className="cart-items">
-              {cart.map(item => (
-                <div key={item.id} className="cart-item">
-                  <div className="item-image">
-                    <img src={item.restaurantImage || 'https://via.placeholder.com/50'} alt="" />
-                  </div>
-                  <div className="item-details">
-                    <h3 className="item-name">{item.itemName}</h3>
-                    <div className="item-restaurant">{item.restaurantName}</div>
-                    <div className="item-price">{formatPrice(item.price)}</div>
-                  </div>
-                  <div className="item-quantity-controls">
-                    <button 
-                      className="quantity-btn minus" 
-                      onClick={() => updateQuantity(item.id, -1)}
-                    >
-                      -
-                    </button>
-                    <span className="quantity-value">{item.quantity}</span>
-                    <button 
-                      className="quantity-btn plus" 
-                      onClick={() => updateQuantity(item.id, 1)}
-                    >
-                      +
-                    </button>
+            {groupedCartItems().map(group => (
+              <div key={`${group.restaurantId}-${group.planInfo?.dayIndex || 'regular'}`} className="cart-group">
+                <div className="cart-group-header">
+                  <img src={group.restaurantImage || 'https://via.placeholder.com/50'} alt="" className="restaurant-icon" />
+                  <div className="restaurant-info">
+                    <div className="restaurant-name">{group.restaurantName}</div>
+                    {group.planInfo && weeklyPlanData && (
+                      <div className="plan-tag">
+                        {getPlanLabel(group.planInfo)}
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+                
+                <div className="cart-items">
+                  {group.items.map(item => (
+                    <div key={item.id} className="cart-item">
+                      <div className="item-details">
+                        <h3 className="item-name">{item.itemName}</h3>
+                        <div className="item-price">{formatPrice(item.price)}</div>
+                      </div>
+                      <div className="item-quantity-controls">
+                        <button 
+                          className="quantity-btn minus" 
+                          onClick={() => updateQuantity(item.id, -1)}
+                        >
+                          -
+                        </button>
+                        <span className="quantity-value">{item.quantity}</span>
+                        <button 
+                          className="quantity-btn plus" 
+                          onClick={() => updateQuantity(item.id, 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
           
           <div className="cart-summary">
@@ -229,10 +306,16 @@ export default function CartPage() {
               Siparişi Tamamla
             </button>
           </div>
+          
+          <div className="weekly-plan-link">
+            <button className="go-to-weekly-plan-btn" onClick={goToWeeklyPlan}>
+              Haftalık Plan Sayfasına Dön
+            </button>
+          </div>
         </div>
       ) : (
         <div className="empty-cart">
-          <div className="empty-cart-icon">🛒</div>
+          <div className="empty-cart-icon"></div>
           <p className="empty-cart-message">Sepetiniz boş.</p>
           <button 
             className="continue-shopping-btn"

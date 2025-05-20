@@ -22,6 +22,34 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [hasUserReviewed, setHasUserReviewed] = useState(false);
   const [calculatedRating, setCalculatedRating] = useState(0);
+  const [activePlanContext, setActivePlanContext] = useState(null);
+  const [showFloatingBar, setShowFloatingBar] = useState(false);
+
+  // Retrieve active plan context from localStorage on component mount
+  useEffect(() => {
+    try {
+      const planContextString = localStorage.getItem('yuumi_active_plan_context');
+      if (planContextString) {
+        const planContext = JSON.parse(planContextString);
+        console.log("Retrieved active plan context:", planContext);
+        setActivePlanContext(planContext);
+        
+        // If we have an active plan context, we should show the floating action bar
+        // when there are items in the cart
+        setShowFloatingBar(true);
+      }
+    } catch (error) {
+      console.error("Error parsing active plan context:", error);
+    }
+  }, []);
+  
+  // Cleanup effect - remove active plan context when component unmounts
+  useEffect(() => {
+    return () => {
+      // Don't remove the context on unmount as we need it when returning to WeeklyPlan
+      // The context will be managed by WeeklyPlan.jsx
+    };
+  }, []);
 
   // Set active tab based on initialTab prop
   useEffect(() => {
@@ -310,7 +338,7 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
       parsedCart = [];
     }
     
-    // Check if the item already exists in the cart
+    // Create cart item with plan info if available
     const cartItem = {
       id: `item-${Date.now()}`,
       restaurantId: restaurant.id,
@@ -323,6 +351,18 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
         item.fiyat || `₺${item.price?.toFixed(2) || '0.00'}`,
       quantity: 1,
     };
+    
+    // Add plan info if active plan context exists
+    if (activePlanContext) {
+      cartItem.planInfo = {
+        dayIndex: activePlanContext.dayIndex,
+        planId: activePlanContext.planId
+      };
+      console.log("Adding item with plan info:", cartItem);
+      
+      // Show the floating bar if coming from weekly plan
+      setShowFloatingBar(true);
+    }
     
     const existingItemIndex = parsedCart.findIndex(i => i.itemId === cartItem.itemId);
     if (existingItemIndex !== -1) {
@@ -390,6 +430,16 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
   // Go to cart page
   const goToCart = () => {
     navigate('/sepetim');
+  };
+  
+  // Continue to weekly plan
+  const continueToWeeklyPlan = () => {
+    // Make sure the active plan context is preserved when navigating back
+    // so WeeklyPlan.jsx can use it for synchronization
+    console.log("Continuing to weekly plan with context:", activePlanContext);
+    
+    // Navigate back to the weekly plan view
+    navigate('/');
   };
 
   // Yeni yorum ekle
@@ -741,8 +791,8 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
         )}
       </div>
 
-      {/* Sepet butonu ve önizleme */}
-      {cart.length > 0 && (
+      {/* Sepet butonu */}
+      {cart.length > 0 && !activePlanContext && (
         <>
           <button className="cart-button" onClick={goToCart}>
             <div className="cart-icon"></div>
@@ -775,6 +825,24 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
             </div>
           )}
         </>
+      )}
+      
+      {/* Floating action bar for weekly plan navigation */}
+      {showFloatingBar && activePlanContext && cart.length > 0 && (
+        <div className="floating-action-bar">
+          <div className="action-bar-info">
+            <span className="action-bar-count">{cart.reduce((sum, item) => sum + item.quantity, 0)} ürün</span>
+            <span className="action-bar-total">₺{cartTotal.toFixed(2)}</span>
+          </div>
+          <div className="action-bar-buttons">
+            <button className="action-button continue-button" onClick={continueToWeeklyPlan}>
+              Devam Et
+            </button>
+            <button className="action-button cart-button-secondary" onClick={goToCart}>
+              Sepete Git
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

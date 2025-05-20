@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './HomePage.css';
 import './RestaurantGridStyles.css';
 import './WeeklyPlan.css';
@@ -26,16 +26,87 @@ export default function WeeklyPlan() {
   const [headerCart, setHeaderCart] = useState([]);  // Add this new state for the header cart
 
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Load weekly plan from localStorage on component mount
+  // Load weekly plan from localStorage and cart from sessionStorage on component mount
   useEffect(() => {
+    // Load weekly plan from localStorage
     const savedPlan = localStorage.getItem('yuumiWeeklyPlan');
     if (savedPlan) {
       try {
         const parsedPlan = JSON.parse(savedPlan);
+        console.log("Loaded weekly plan from localStorage");
         setWeeklyPlan(parsedPlan);
       } catch (error) {
         console.error('Error parsing saved weekly plan:', error);
+      }
+    }
+    
+    // Load global cart from sessionStorage
+    const savedCart = sessionStorage.getItem('yuumiCart');
+    if (savedCart) {
+      try {
+        const parsedCart = JSON.parse(savedCart);
+        console.log(`Loaded ${parsedCart.length} items from global cart`);
+        
+        // Convert flat cart to day/plan based cart
+        const dayPlanCart = {};
+        
+        parsedCart.forEach(item => {
+          if (item.planInfo) {
+            const { dayIndex, planId } = item.planInfo;
+            const cartKey = `${dayIndex}-${planId}`;
+            
+            if (!dayPlanCart[cartKey]) {
+              dayPlanCart[cartKey] = [];
+            }
+            
+            // Check if item already exists
+            const existingIndex = dayPlanCart[cartKey].findIndex(
+              existing => existing.itemId === item.itemId && 
+                         existing.restaurantId === item.restaurantId
+            );
+            
+            if (existingIndex >= 0) {
+              // Update quantity if item already exists
+              dayPlanCart[cartKey][existingIndex].quantity += item.quantity;
+            } else {
+              // Add new item
+              dayPlanCart[cartKey].push(item);
+            }
+          }
+        });
+        
+        setCart(dayPlanCart);
+        
+        // Set header cart for display
+        setHeaderCart(parsedCart);
+      } catch (error) {
+        console.error('Error parsing saved cart:', error);
+      }
+    }
+    
+    // Check for active plan context in localStorage
+    const activePlanContext = localStorage.getItem('yuumiActivePlanContext');
+    if (activePlanContext) {
+      try {
+        const parsedContext = JSON.parse(activePlanContext);
+        console.log("Restoring active plan context:", parsedContext);
+        
+        // Wait a bit to ensure weekly plan is loaded first
+        setTimeout(() => {
+          const { dayIndex, planId } = parsedContext;
+          
+          if (typeof dayIndex === 'number' && planId) {
+            // Set the active day
+            setActiveDayIndex(dayIndex);
+            
+            // Set selected plan info
+            setSelectedPlanInfo(parsedContext);
+          }
+        }, 100);
+      } catch (error) {
+        console.error('Error parsing active plan context:', error);
       }
     }
   }, []);
@@ -168,8 +239,10 @@ export default function WeeklyPlan() {
     const currentMinute = Math.ceil(now.getMinutes() / 5) * 5; // Round to nearest 5 minutes
     const defaultTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
     
+    const newPlanId = `plan-${activeDayIndex}-${newPlanNumber}`;
+    
     currentDay.plans.push({
-      id: `plan-${activeDayIndex}-${newPlanNumber}`,
+      id: newPlanId,
       name: `Plan ${newPlanNumber}`,
       time: defaultTime,
       selections: []
@@ -179,6 +252,9 @@ export default function WeeklyPlan() {
     
     // Save to localStorage
     localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
+    
+    // Automatically switch to the new plan
+    switchToPlan(activeDayIndex, newPlanId);
   };
 
   // Open time picker
@@ -245,10 +321,20 @@ export default function WeeklyPlan() {
 
   // Open restaurant selection for a plan
   const openRestaurantSelection = (planId) => {
+    // Clear any existing active plan context first
+    localStorage.removeItem('yuumi_active_plan_context');
+    
+    // Set the current selected plan info
     setSelectedPlanInfo({
       dayIndex: activeDayIndex,
       planId
     });
+    
+    console.log("Opening restaurant selection for plan:", {
+      dayIndex: activeDayIndex,
+      planId
+    });
+    
     setShowRestaurantSelection(true);
   };
   
@@ -256,25 +342,43 @@ export default function WeeklyPlan() {
   const closeRestaurantSelection = () => {
     setShowRestaurantSelection(false);
     setSelectedPlanInfo(null);
+    
+    // Make sure the active plan context is cleared
+    localStorage.removeItem('yuumi_active_plan_context');
   };
 
-  // Sepete yemek ekleme fonksiyonu
+  // Add a modified addItemToCart function to better handle cart state
   const addItemToCart = (restaurantId, itemId) => {
-    if (!selectedPlanInfo) return;
+    if (!selectedPlanInfo) {
+      console.error("No plan selected. Cannot add item to cart.");
+      return;
+    }
     
     const { dayIndex, planId } = selectedPlanInfo;
+    console.log(`Adding item to cart. Day Index: ${dayIndex}, Plan ID: ${planId}`);
+    
     const restaurant = restaurants.find(r => r.id === restaurantId);
-    if (!restaurant) return;
+    if (!restaurant) {
+      console.error(`Restaurant not found with ID: ${restaurantId}`);
+      return;
+    }
     
     const item = restaurant.items.find(i => i.id === itemId);
-    if (!item) return;
+    if (!item) {
+      console.error(`Item not found with ID: ${itemId} in restaurant ${restaurantId}`);
+      return;
+    }
+    
+    console.log(`Found item: ${item.name || item.isim} in restaurant: ${restaurant.name || restaurant.isim}`);
     
     const itemPrice = typeof item.fiyat === 'number' ? 
       `₺${item.fiyat.toFixed(2)}` : 
       item.fiyat || `₺${item.price?.toFixed(2) || '0.00'}`;
     
+    const uniqueId = `item-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
     const cartItem = {
-      id: `item-${Date.now()}`,
+      id: uniqueId,
       restaurantId,
       restaurantName: restaurant.name || restaurant.isim,
       restaurantImage: restaurant.image || restaurant.logoUrl || 'https://via.placeholder.com/100',
@@ -282,11 +386,57 @@ export default function WeeklyPlan() {
       itemName: item.name || item.isim,
       price: itemPrice,
       quantity: 1,
-      dayIndex,
-      planId
+      planInfo: {
+        dayIndex,
+        planId
+      }
     };
     
-    // Sepete ekle (gün/plan bazlı)
+    // Step 1: First update the weekly plan to ensure items appear in the plan
+    const updatedWeeklyPlan = JSON.parse(JSON.stringify(weeklyPlan)); // Deep clone to avoid reference issues
+    
+    if (dayIndex >= 0 && dayIndex < updatedWeeklyPlan.length) {
+      const dayPlan = updatedWeeklyPlan[dayIndex];
+      const planIndex = dayPlan.plans.findIndex(plan => plan.id === planId);
+      
+      if (planIndex >= 0) {
+        // Check if item already exists to avoid duplicates
+        const existingSelectionIndex = dayPlan.plans[planIndex].selections.findIndex(
+          s => s.itemId === itemId && s.restaurantId === restaurantId
+        );
+        
+        if (existingSelectionIndex >= 0) {
+          console.log(`Item already exists in plan at day ${dayIndex}, plan ${planId}. Updating quantity.`);
+          // In the future we could update quantity here if needed
+        } else {
+          // Add to plan
+          const selectionItem = {
+            id: uniqueId,
+            restaurantId: cartItem.restaurantId,
+            restaurantName: cartItem.restaurantName,
+            restaurantImage: cartItem.restaurantImage,
+            itemId: itemId,
+            itemName: cartItem.itemName,
+            price: cartItem.price
+          };
+          
+          dayPlan.plans[planIndex].selections.push(selectionItem);
+          console.log(`Added item "${cartItem.itemName}" to plan at day ${dayIndex}, plan ${planId}`);
+        }
+        
+        // Set updated weekly plan
+        setWeeklyPlan(updatedWeeklyPlan);
+        
+        // Save updated plan to localStorage
+        localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedWeeklyPlan));
+      } else {
+        console.error(`Plan not found with ID: ${planId} in day ${dayIndex}`);
+      }
+    } else {
+      console.error(`Invalid day index: ${dayIndex}`);
+    }
+    
+    // Step 2: Update the cart state by day/plan
     const cartKey = `${dayIndex}-${planId}`;
     
     setCart(prevCart => {
@@ -294,67 +444,118 @@ export default function WeeklyPlan() {
       if (!updatedCart[cartKey]) {
         updatedCart[cartKey] = [];
       }
-      updatedCart[cartKey].push(cartItem);
+      
+      // Check if item already exists in cart
+      const existingItemIndex = updatedCart[cartKey].findIndex(
+        i => i.itemId === itemId && i.restaurantId === restaurantId
+      );
+      
+      if (existingItemIndex >= 0) {
+        // Increase quantity for existing item
+        updatedCart[cartKey][existingItemIndex].quantity += 1;
+        console.log(`Increased quantity for item "${cartItem.itemName}" in cart for day ${dayIndex}, plan ${planId}`);
+      } else {
+        // Add new item to cart
+        updatedCart[cartKey].push({...cartItem});
+        console.log(`Added item "${cartItem.itemName}" to cart for day ${dayIndex}, plan ${planId}`);
+      }
+      
       return updatedCart;
     });
     
-    // Add to header cart as well
-    setHeaderCart(prev => [...prev, cartItem]);
-    
-    // Save to sessionStorage for global access
-    const storedCart = sessionStorage.getItem('yuumiCart') || '[]';
-    let parsedCart = [];
-    try {
-      parsedCart = JSON.parse(storedCart);
-    } catch (e) {
-      console.error('Error parsing cart:', e);
-      parsedCart = [];
-    }
-    
-    // Check if the item already exists in the cart
-    const existingItemIndex = parsedCart.findIndex(i => i.itemId === cartItem.itemId);
-    if (existingItemIndex !== -1) {
-      // Increase quantity
-      parsedCart[existingItemIndex].quantity += 1;
-    } else {
-      // Add new item
-      parsedCart.push(cartItem);
-    }
-    
-    // Save updated cart
-    sessionStorage.setItem('yuumiCart', JSON.stringify(parsedCart));
-    
-    // Sepet aksiyonlarını göster
-    setShowCartActions(true);
-    
-    // Update the cart icon in the header
-    updateHeaderCartIcon();
-    
-    // Also add to weekly plan right away to show in Plan 1
-    const updatedPlan = [...weeklyPlan];
-    const planIndex = updatedPlan[dayIndex].plans.findIndex(plan => plan.id === planId);
-    
-    if (planIndex >= 0) {
-      // Check if the item is already in the plan
-      const existingSelection = updatedPlan[dayIndex].plans[planIndex].selections.find(
-        s => s.itemName === cartItem.itemName && s.restaurantName === cartItem.restaurantName
+    // Step 3: Update header cart for display
+    setHeaderCart(prev => {
+      const updatedHeaderCart = [...prev];
+      const existingItemIndex = updatedHeaderCart.findIndex(
+        i => i.itemId === itemId && i.restaurantId === restaurantId
       );
       
-      if (!existingSelection) {
-        updatedPlan[dayIndex].plans[planIndex].selections.push({
-          id: cartItem.id,
-          restaurantName: cartItem.restaurantName,
-          restaurantImage: cartItem.restaurantImage,
-          itemName: cartItem.itemName,
-          price: cartItem.price
-        });
-        
-        setWeeklyPlan(updatedPlan);
-        
-        // Save weekly plan to localStorage
-        localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
+      if (existingItemIndex >= 0) {
+        updatedHeaderCart[existingItemIndex].quantity += 1;
+        console.log(`Increased quantity for item "${cartItem.itemName}" in header cart`);
+      } else {
+        updatedHeaderCart.push({...cartItem});
+        console.log(`Added item "${cartItem.itemName}" to header cart`);
       }
-    }
+      
+      return updatedHeaderCart;
+    });
+    
+    // Step 4: Update global cart in sessionStorage
+    setTimeout(() => {
+      updateGlobalCart();
+    }, 100);
+    
+    // Show cart actions
+    setShowCartActions(true);
+  };
+
+  // Function to update the global cart from weekly plan - IMPROVED
+  const updateGlobalCart = () => {
+    console.log("Updating global cart from weekly plan data...");
+    
+    // Get all selections from all plans
+    const cartItems = [];
+    const processedItems = new Set(); // Track processed items to avoid duplicates
+    
+    weeklyPlan.forEach((day, dayIndex) => {
+      day.plans.forEach(plan => {
+        if (plan.selections && plan.selections.length > 0) {
+          console.log(`Processing ${plan.selections.length} items in day ${dayIndex}, plan ${plan.id}`);
+          
+          plan.selections.forEach(selection => {
+            // Create a unique identifier for the item
+            const itemKey = `${selection.restaurantId || 'unknown'}-${selection.itemId || 'unknown'}-${dayIndex}-${plan.id}`;
+            
+            // Skip if already processed
+            if (processedItems.has(itemKey)) {
+              console.log(`Skipping duplicate item: ${selection.itemName}`);
+              return;
+            }
+            
+            processedItems.add(itemKey);
+            
+            // Find if the item exists in the cart state to get the correct quantity
+            let quantity = 1;
+            const cartKey = `${dayIndex}-${plan.id}`;
+            if (cart[cartKey]) {
+              const cartItem = cart[cartKey].find(
+                item => item.itemId === selection.itemId && 
+                       item.restaurantId === selection.restaurantId
+              );
+              if (cartItem) {
+                quantity = cartItem.quantity;
+              }
+            }
+            
+            // Create a cart item for each selection
+            cartItems.push({
+              id: selection.id || `item-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+              restaurantId: selection.restaurantId || 'unknown',
+              restaurantName: selection.restaurantName,
+              restaurantImage: selection.restaurantImage || 'https://via.placeholder.com/100',
+              itemId: selection.itemId || 'unknown',
+              itemName: selection.itemName,
+              price: selection.price,
+              quantity: quantity,
+              planInfo: {
+                dayIndex: dayIndex,
+                planId: plan.id
+              }
+            });
+            
+            console.log(`Added to global cart: ${selection.itemName} (${quantity}) for day ${dayIndex}, plan ${plan.id}`);
+          });
+        }
+      });
+    });
+    
+    // Save to sessionStorage
+    sessionStorage.setItem('yuumiCart', JSON.stringify(cartItems));
+    console.log(`Updated global cart with ${cartItems.length} unique items`);
+    
+    // Update the cart icon count
+    updateHeaderCartIcon();
   };
 
   // Function to update the cart icon in header
@@ -414,6 +615,27 @@ export default function WeeklyPlan() {
     updateHeaderCartIcon();
   }, [headerCart]);
 
+  // Plandan Ürün Silme
+  const removeSelection = (planId, selectionId) => {
+    const updatedPlan = [...weeklyPlan];
+    const currentDay = updatedPlan[activeDayIndex];
+    const planIndex = currentDay.plans.findIndex(plan => plan.id === planId);
+    
+    if (planIndex >= 0) {
+      currentDay.plans[planIndex].selections = currentDay.plans[planIndex].selections.filter(
+        selection => selection.id !== selectionId
+      );
+      
+      setWeeklyPlan(updatedPlan);
+      
+      // Save to localStorage
+      localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
+      
+      // Update the global cart after removing the item
+      updateGlobalCart();
+    }
+  };
+
   // Sepetin içeriğini plana ekle
   const addCartToSelection = () => {
     if (!selectedPlanInfo) return;
@@ -430,19 +652,32 @@ export default function WeeklyPlan() {
     if (planIndex >= 0) {
       // Sepetteki öğeleri plana ekle
       cartItems.forEach(item => {
-        updatedPlan[dayIndex].plans[planIndex].selections.push({
-          id: item.id,
-          restaurantName: item.restaurantName,
-          restaurantImage: item.restaurantImage,
-          itemName: item.itemName,
-          price: item.price
-        });
+        // Check if the item already exists in plan to avoid duplicates
+        const existingSelectionIndex = updatedPlan[dayIndex].plans[planIndex].selections.findIndex(
+          selection => selection.itemName === item.itemName && 
+                      selection.restaurantName === item.restaurantName
+        );
+        
+        // Only add if not already in plan
+        if (existingSelectionIndex === -1) {
+          updatedPlan[dayIndex].plans[planIndex].selections.push({
+            id: item.id,
+            restaurantId: item.restaurantId,
+            restaurantName: item.restaurantName,
+            restaurantImage: item.restaurantImage,
+            itemName: item.itemName,
+            price: item.price
+          });
+        }
       });
       
       setWeeklyPlan(updatedPlan);
       
-      // Save weekly plan to localStorage to persist between navigation
+      // Save to localStorage
       localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
+      
+      // Update the global cart with the new plan items
+      updateGlobalCart();
       
       // Sepeti temizle
       setCart(prevCart => {
@@ -611,24 +846,6 @@ export default function WeeklyPlan() {
     }
   };
 
-  // Remove a selection from a plan
-  const removeSelection = (planId, selectionId) => {
-    const updatedPlan = [...weeklyPlan];
-    const currentDay = updatedPlan[activeDayIndex];
-    const planIndex = currentDay.plans.findIndex(plan => plan.id === planId);
-    
-    if (planIndex >= 0) {
-      currentDay.plans[planIndex].selections = currentDay.plans[planIndex].selections.filter(
-        selection => selection.id !== selectionId
-      );
-      
-      setWeeklyPlan(updatedPlan);
-      
-      // Save to localStorage
-      localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
-    }
-  };
-
   // Calculate total cost of plan
   const calculateTotalCost = () => {
     let total = 0;
@@ -725,14 +942,261 @@ export default function WeeklyPlan() {
 
   // Add new function to handle restaurant card click
   const viewRestaurantDetails = (restaurantId) => {
-    if (restaurantId) {
+    if (!restaurantId) return;
+    
+    if (selectedPlanInfo) {
+      console.log("Selected plan info before navigation:", selectedPlanInfo);
+      
+      // Save the current selected plan info to localStorage before navigating
+      localStorage.setItem('yuumi_active_plan_context', JSON.stringify({
+        dayIndex: selectedPlanInfo.dayIndex,
+        planId: selectedPlanInfo.planId
+      }));
+      
+      // Add a small delay to ensure the localStorage is set before navigation
+      setTimeout(() => {
+        navigate(`/restaurant/${restaurantId}`);
+      }, 50);
+    } else {
       navigate(`/restaurant/${restaurantId}`);
     }
   };
 
-  // Add a function to navigate to cart page
-  const goToCart = () => {
-    navigate('/sepetim');
+  // Add useEffect to sync sessionStorage cart items back to weekly plan when returning
+  useEffect(() => {
+    // This function will sync cart items with plan info back to the weekly plan
+    const syncCartItemsToPlan = () => {
+      const storedCart = sessionStorage.getItem('yuumiCart');
+      const activePlanContext = localStorage.getItem('yuumi_active_plan_context');
+      
+      console.log("Syncing cart items to plan. Active context:", activePlanContext);
+      
+      if (storedCart) {
+        try {
+          const parsedCart = JSON.parse(storedCart);
+          const planInfoItems = parsedCart.filter(item => item.planInfo);
+          
+          if (planInfoItems.length > 0) {
+            console.log("Found items with plan info to sync:", planInfoItems);
+            
+            // Create a copy of the current weekly plan
+            const updatedWeeklyPlan = [...weeklyPlan];
+            
+            // Process items with plan info
+            planInfoItems.forEach(item => {
+              const { dayIndex, planId } = item.planInfo;
+              
+              // Check if day and plan exist
+              if (updatedWeeklyPlan[dayIndex] && 
+                  updatedWeeklyPlan[dayIndex].plans) {
+                
+                const planIndex = updatedWeeklyPlan[dayIndex].plans.findIndex(
+                  plan => plan.id === planId
+                );
+                
+                if (planIndex >= 0) {
+                  // Check if item already exists in plan to avoid duplicates
+                  const existingSelectionIndex = updatedWeeklyPlan[dayIndex].plans[planIndex].selections.findIndex(
+                    selection => selection.itemName === item.itemName && 
+                                selection.restaurantName === item.restaurantName
+                  );
+                  
+                  if (existingSelectionIndex === -1) {
+                    // Add the item to the plan if it doesn't already exist
+                    updatedWeeklyPlan[dayIndex].plans[planIndex].selections.push({
+                      id: item.id,
+                      restaurantName: item.restaurantName,
+                      restaurantImage: item.restaurantImage,
+                      itemName: item.itemName,
+                      price: item.price
+                    });
+                    
+                    console.log(`Added item ${item.itemName} to day ${dayIndex}, plan ${planId}`);
+                  }
+                }
+              }
+            });
+            
+            // Only update if changes were made
+            if (JSON.stringify(updatedWeeklyPlan) !== JSON.stringify(weeklyPlan)) {
+              console.log("Updating weekly plan with synced items");
+              
+              // Update the weekly plan state with synchronized items
+              setWeeklyPlan(updatedWeeklyPlan);
+              
+              // Save to localStorage
+              localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedWeeklyPlan));
+            }
+          }
+        } catch (error) {
+          console.error("Error syncing cart items to plan:", error);
+        }
+      }
+    };
+    
+    // Run synchronization when component mounts and when location changes
+    syncCartItemsToPlan();
+  }, [navigate, weeklyPlan]);
+  
+  // Use location to detect when we return from restaurant detail
+  useEffect(() => {
+    // Check if we're returning from a restaurant detail page
+    if (location.pathname === '/' && localStorage.getItem('yuumi_active_plan_context')) {
+      console.log("Detected return from restaurant detail page");
+      
+      // Sync cart items first
+      const syncCartItems = async () => {
+        // Get active plan context
+        try {
+          const planContextString = localStorage.getItem('yuumi_active_plan_context');
+          if (planContextString) {
+            const planContext = JSON.parse(planContextString);
+            console.log("Retrieved active plan context on return:", planContext);
+            
+            // Set active day and plan based on the context
+            if (planContext.dayIndex !== undefined) {
+              setActiveDayIndex(planContext.dayIndex);
+            }
+            
+            // Set selected plan info to continue adding items to the same plan
+            setSelectedPlanInfo(planContext);
+            
+            // Give the state updates time to propagate
+            setTimeout(() => {
+              // Clear plan context after processing
+              localStorage.removeItem('yuumi_active_plan_context');
+            }, 100);
+          }
+        } catch (error) {
+          console.error("Error processing active plan context:", error);
+        }
+      };
+      
+      syncCartItems();
+    }
+  }, [location.pathname]);
+
+  // Function to switch between different plans
+  const switchToPlan = (dayIndex, planId) => {
+    console.log(`Switching to day ${dayIndex}, plan ${planId}`);
+    
+    // Make sure we have valid indices
+    if (dayIndex < 0 || dayIndex >= weeklyPlan.length) {
+      console.error(`Invalid day index: ${dayIndex}`);
+      return;
+    }
+    
+    const day = weeklyPlan[dayIndex];
+    const planIndex = day.plans.findIndex(plan => plan.id === planId);
+    
+    if (planIndex < 0) {
+      console.error(`Plan with ID ${planId} not found in day ${dayIndex}`);
+      return;
+    }
+    
+    // Update the active day if needed
+    if (activeDayIndex !== dayIndex) {
+      setActiveDayIndex(dayIndex);
+    }
+    
+    // Set the selected plan info
+    setSelectedPlanInfo({
+      dayIndex,
+      planId,
+      planName: day.plans[planIndex].name,
+      planTime: day.plans[planIndex].time
+    });
+    
+    // Check if we have any items in the selected plan
+    const planSelections = day.plans[planIndex].selections || [];
+    console.log(`Plan has ${planSelections.length} items`);
+    
+    // If we had opened restaurant selection previously, close it
+    if (showRestaurantSelection) {
+      setShowRestaurantSelection(false);
+    }
+    
+    // Ensure cart state is synchronized with the selected plan
+    syncCartWithSelectedPlan(dayIndex, planId);
+    
+    // Save the current context to localStorage for persistence between page navigations
+    localStorage.setItem('yuumiActivePlanContext', JSON.stringify({
+      dayIndex,
+      planId,
+      planName: day.plans[planIndex].name,
+      planTime: day.plans[planIndex].time
+    }));
+  };
+  
+  // Function to synchronize cart with selected plan
+  const syncCartWithSelectedPlan = (dayIndex, planId) => {
+    console.log(`Synchronizing cart with day ${dayIndex}, plan ${planId}`);
+    
+    // Make sure the plan exists in our data
+    if (dayIndex < 0 || dayIndex >= weeklyPlan.length) {
+      console.error(`Invalid day index: ${dayIndex}`);
+      return;
+    }
+    
+    const day = weeklyPlan[dayIndex];
+    const planIndex = day.plans.findIndex(plan => plan.id === planId);
+    
+    if (planIndex < 0) {
+      console.error(`Plan with ID ${planId} not found in day ${dayIndex}`);
+      return;
+    }
+    
+    // Get the current selections for this plan
+    const planSelections = day.plans[planIndex].selections || [];
+    const cartKey = `${dayIndex}-${planId}`;
+    
+    // Ensure the cart has an entry for this plan/day combo
+    setCart(prevCart => {
+      const updatedCart = { ...prevCart };
+      
+      if (!updatedCart[cartKey] || !Array.isArray(updatedCart[cartKey])) {
+        updatedCart[cartKey] = [];
+      }
+      
+      // Build a new cart entry based on plan selections
+      // but retain quantity info if it exists
+      const newCartItems = [];
+      
+      planSelections.forEach(selection => {
+        // Check if item exists in cart already
+        const existingItem = updatedCart[cartKey].find(
+          item => item.itemId === selection.itemId && 
+                 item.restaurantId === selection.restaurantId
+        );
+        
+        // Create or update the cart item
+        const cartItem = {
+          id: selection.id,
+          restaurantId: selection.restaurantId,
+          restaurantName: selection.restaurantName,
+          restaurantImage: selection.restaurantImage,
+          itemId: selection.itemId,
+          itemName: selection.itemName,
+          price: selection.price,
+          quantity: existingItem ? existingItem.quantity : 1,
+          planInfo: {
+            dayIndex,
+            planId
+          }
+        };
+        
+        newCartItems.push(cartItem);
+      });
+      
+      updatedCart[cartKey] = newCartItems;
+      
+      return updatedCart;
+    });
+    
+    // Update the global cart asynchronously to avoid state update conflicts
+    setTimeout(() => {
+      updateGlobalCart();
+    }, 100);
   };
 
   // Loading state
@@ -783,7 +1247,11 @@ export default function WeeklyPlan() {
                 <div 
                   key={restaurant.id} 
                   className="restaurant-card"
-                  onClick={() => viewRestaurantDetails(restaurant.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    viewRestaurantDetails(restaurant.id);
+                  }}
                 >
                   <div className="restaurant-header">
                     <img 
@@ -826,6 +1294,7 @@ export default function WeeklyPlan() {
                           key={item.id} 
                           className="quick-add-btn"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation(); // Prevent click from bubbling to restaurant card
                             addItemToCart(restaurant.id, item.id);
                           }}

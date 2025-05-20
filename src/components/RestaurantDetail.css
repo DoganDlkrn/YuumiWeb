@@ -1085,4 +1085,112 @@ a.menu-button {
   background-color: #00B2FF;
   border-radius: 3px 3px 0 0;
   display: block;
+}
+
+/* Floating Action Bar for Weekly Plan Navigation */
+.floating-action-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 600px;
+  background-color: white;
+  border-radius: 12px;
+  padding: 15px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translate(-50%, 100%);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.action-bar-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.action-bar-count {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.action-bar-total {
+  font-size: 18px;
+  font-weight: 700;
+  color: #00B2FF;
+}
+
+.action-bar-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.continue-button {
+  background-color: #00B2FF;
+  color: white;
+}
+
+.continue-button:hover {
+  background-color: #0095d9;
+}
+
+.cart-button-secondary {
+  background-color: #F5F5F5;
+  color: #333;
+}
+
+.cart-button-secondary:hover {
+  background-color: #E0E0E0;
+}
+
+/* Responsive design for floating bar */
+@media (max-width: 600px) {
+  .floating-action-bar {
+    width: calc(100% - 20px);
+    padding: 12px 15px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .action-bar-info {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+
+  .action-bar-buttons {
+    width: 100%;
+  }
+
+  .action-button {
+    flex: 1;
+    padding: 12px 0;
+    text-align: center;
+  }
 } 

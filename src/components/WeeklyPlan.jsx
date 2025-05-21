@@ -171,10 +171,17 @@ export default function WeeklyPlan() {
       planDate.setDate(today.getDate() + i);
       const dayNumber = planDate.getDay();
       
-      // Get current time for the default time value
-      const currentHour = today.getHours();
-      const currentMinute = Math.ceil(today.getMinutes() / 5) * 5; // Round to nearest 5 minutes
-      const defaultTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+      // Get current time for today's default time value, use rounded minutes
+      let defaultTime;
+      if (i === 0) { // Today
+        const currentHour = today.getHours();
+        const currentMinute = Math.ceil(today.getMinutes() / 5) * 5; // Round to nearest 5 minutes
+        defaultTime = `${currentHour.toString().padStart(2, '0')}:${
+          currentMinute >= 60 ? '00' : currentMinute.toString().padStart(2, '0')
+        }`;
+      } else {
+        defaultTime = '12:00'; // Default for future days
+      }
       
       weekPlan.push({
         id: i + 1,
@@ -185,7 +192,7 @@ export default function WeeklyPlan() {
           {
             id: `plan-${i}-1`,
             name: 'Plan 1',
-            time: i === 0 ? defaultTime : '12:00',
+            time: defaultTime,
             selections: []
           }
         ]
@@ -209,7 +216,12 @@ export default function WeeklyPlan() {
   };
 
   const goToDay = (index) => {
-    setActiveDayIndex(index);
+    // If clicking on already active day, deselect it
+    if (index === activeDayIndex) {
+      setActiveDayIndex(null);
+    } else {
+      setActiveDayIndex(index);
+    }
   };
 
   // Complete the current day and move to next
@@ -237,7 +249,9 @@ export default function WeeklyPlan() {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = Math.ceil(now.getMinutes() / 5) * 5; // Round to nearest 5 minutes
-    const defaultTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+    const defaultTime = `${currentHour.toString().padStart(2, '0')}:${
+      currentMinute >= 60 ? '00' : currentMinute.toString().padStart(2, '0')
+    }`;
     
     const newPlanId = `plan-${activeDayIndex}-${newPlanNumber}`;
     
@@ -1330,7 +1344,6 @@ export default function WeeklyPlan() {
             <div className="day-connector"></div>
             
             <div className="day-nav-arrow prev" onClick={goToPrevDay}>
-              &#8592;
             </div>
             
             {weeklyPlan.map((day, index) => (
@@ -1347,7 +1360,6 @@ export default function WeeklyPlan() {
             ))}
             
             <div className="day-nav-arrow next" onClick={goToNextDay}>
-              &#8594;
             </div>
           </div>
           

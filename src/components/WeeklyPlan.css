@@ -638,4 +638,44 @@
   font-weight: 600;
   font-size: 16px;
   text-align: center;
+}
+
+.day-nav-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background-color: transparent;
+  font-size: 0; /* Hide text */
+  cursor: pointer;
+  position: relative;
+}
+
+.day-nav-arrow:before {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #00B2FF;
+  border-right: 2px solid #00B2FF;
+  position: absolute;
+}
+
+.day-nav-arrow.prev:before {
+  transform: rotate(-135deg);
+}
+
+.day-nav-arrow.next:before {
+  transform: rotate(45deg);
+}
+
+.day-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 0;
+  margin: 20px 0;
+  position: relative;
 } 

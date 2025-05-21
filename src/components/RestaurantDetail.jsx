@@ -791,40 +791,19 @@ export default function RestaurantDetail({ initialTab = 'menu' }) {
         )}
       </div>
 
-      {/* Sepet butonu */}
+      {/* Remove the side cart button and replace with bottom floating bar */}
       {cart.length > 0 && !activePlanContext && (
-        <>
-          <button className="cart-button" onClick={goToCart}>
-            <div className="cart-icon"></div>
-            <span className="cart-count">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
-            <span className="cart-total">₺{cartTotal.toFixed(2)}</span>
-          </button>
-          
-          {showCartPreview && (
-            <div className="cart-preview">
-              <h3 className="cart-preview-title">Sepetim</h3>
-              <div className="cart-items">
-                {cart.map(item => (
-                  <div key={item.id} className="cart-item">
-                    <div className="cart-item-info">
-                      <span className="cart-item-quantity">{item.quantity}x</span>
-                      <span className="cart-item-name">{item.isim}</span>
-                    </div>
-                    <div className="cart-item-price">₺{(item.fiyat * item.quantity).toFixed(2)}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="cart-total-row">
-                <span>Toplam:</span>
-                <span className="cart-preview-total">₺{cartTotal.toFixed(2)}</span>
-              </div>
-              <div className="cart-actions">
-                <button className="clear-cart-btn" onClick={clearCart}>Sepeti Temizle</button>
-                <button className="checkout-btn" onClick={goToCart}>Sepete Git</button>
-              </div>
-            </div>
-          )}
-        </>
+        <div className="floating-action-bar">
+          <div className="action-bar-info">
+            <span className="action-bar-count">{cart.reduce((sum, item) => sum + item.quantity, 0)} ürün</span>
+            <span className="action-bar-total">₺{cartTotal.toFixed(2)}</span>
+          </div>
+          <div className="action-bar-buttons">
+            <button className="action-button cart-button-secondary" onClick={goToCart}>
+              Sepete Git
+            </button>
+          </div>
+        </div>
       )}
       
       {/* Floating action bar for weekly plan navigation */}

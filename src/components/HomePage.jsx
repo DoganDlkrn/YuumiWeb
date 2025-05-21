@@ -27,13 +27,10 @@ export default function HomePage({ currentUser, authError }) {
   const [selectedKitchenTypes, setSelectedKitchenTypes] = useState([]);
   const [minPriceValue, setMinPriceValue] = useState(0);
   const [maxPriceValue, setMaxPriceValue] = useState(500);
-  const [minSepetTutari, setMinSepetTutari] = useState(0);
   const [showMinPrice, setShowMinPrice] = useState(false);
   const [showMaxPrice, setShowMaxPrice] = useState(false);
   const [isDraggingMin, setIsDraggingMin] = useState(false);
   const [isDraggingMax, setIsDraggingMax] = useState(false);
-  const [showSepetTutari, setShowSepetTutari] = useState(false);
-  const [isDraggingSepet, setIsDraggingSepet] = useState(false);
   const [showAllKitchenTypes, setShowAllKitchenTypes] = useState(false);
   
   // İletişim tercihleri için toggle state'leri
@@ -60,6 +57,25 @@ export default function HomePage({ currentUser, authError }) {
   const [showNameModal, setShowNameModal] = useState(false);
   const [showSurnameModal, setShowSurnameModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+  
+  // Add state to manage addresses
+  const [addresses, setAddresses] = useState([
+    {
+      id: 'address-1',
+      label: 'Ev',
+      fullAddress: 'Cumhuriyet Mah. Prof. Dr. Ahmet Babababa Blv. No: 21, Elazığ',
+      isActive: true
+    },
+    {
+      id: 'address-2',
+      label: 'İş',
+      fullAddress: 'Fırat Üniversitesi, Mühendislik Fakültesi, Merkez/Elazığ',
+      isActive: false
+    }
+  ]);
+
+  // Add state for tracking selected address
+  const [selectedAddressId, setSelectedAddressId] = useState('address-1');
   
   // Sayfa değiştiğinde activePage'i güncelle
   useEffect(() => {
@@ -450,70 +466,6 @@ export default function HomePage({ currentUser, authError }) {
                 </div>
                 
                 <div className="filter-group">
-                  <h4 className="filter-group-title">Minimum Sepet Tutarı</h4>
-                  <div className="price-range-slider">
-                    <div className="slider-track">
-                      <div 
-                        className="slider-progress" 
-                        style={{
-                          left: 0,
-                          width: `${(minSepetTutari / 1000) * 100}%`
-                        }}
-                      ></div>
-                      <div 
-                        className="slider-handle" 
-                        style={{left: `${(minSepetTutari / 1000) * 100}%`}}
-                        onMouseEnter={() => setShowSepetTutari(true)}
-                        onMouseLeave={() => !isDraggingSepet && setShowSepetTutari(false)}
-                        onMouseDown={() => {
-                          setShowSepetTutari(true);
-                          setIsDraggingSepet(true);
-                        }}
-                        onMouseUp={() => {
-                          setIsDraggingSepet(false);
-                          setShowSepetTutari(false);
-                        }}
-                      >
-                        <div 
-                          className="slider-value" 
-                          style={{opacity: (showSepetTutari || isDraggingSepet) ? 1 : 0}}
-                        >
-                          {minSepetTutari} TL
-                        </div>
-                      </div>
-                    </div>
-                    <div className="price-range-limits">
-                      <span>0 TL</span>
-                      <span>Tümü</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1000"
-                      value={minSepetTutari}
-                      onChange={(e) => setMinSepetTutari(parseInt(e.target.value))}
-                      onMouseDown={() => {
-                        setShowSepetTutari(true);
-                        setIsDraggingSepet(true);
-                      }}
-                      onMouseUp={() => {
-                        setIsDraggingSepet(false);
-                        setShowSepetTutari(false);
-                      }}
-                      style={{
-                        position: 'absolute',
-                        width: '100%',
-                        top: 0,
-                        height: '20px',
-                        opacity: 0,
-                        cursor: 'pointer',
-                        zIndex: 3
-                      }}
-                    />
-                  </div>
-                </div>
-                
-                <div className="filter-group">
                   <h4 className="filter-group-title">Fiyat Aralığı</h4>
                   <div className="price-range-slider">
                     <div className="slider-track">
@@ -652,24 +604,29 @@ export default function HomePage({ currentUser, authError }) {
             <div className="address-list">
               {!showAddAddress ? (
                 <>
-                  <div className="address-item active">
-                    <div className="address-icon home-icon"></div>
-                    <div className="address-details">
-                      <h3>Ev</h3>
-                      <p>Cumhuriyet Mah. Prof. Dr. Ahmet Babababa Blv. No: 21, Elazığ</p>
+                  {addresses.map((address) => (
+                    <div 
+                      key={address.id}
+                      className={`address-item ${address.id === selectedAddressId ? 'active' : ''}`}
+                      onClick={() => selectAddress(address.id)}
+                    >
+                      <div className={`address-icon ${address.label.toLowerCase()}-icon`}></div>
+                      <div className="address-details">
+                        <h3>{address.label}</h3>
+                        <p>{address.fullAddress}</p>
+                      </div>
+                      {address.id === selectedAddressId && <div className="address-check"></div>}
+                      <button 
+                        className="address-delete-btn" 
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent selection when deleting
+                          handleDeleteAddress(address.id);
+                        }}
+                      >
+                        ×
+                      </button>
                     </div>
-                    <div className="address-check"></div>
-                    <button className="address-delete-btn" onClick={() => handleDeleteAddress(0)}>×</button>
-                  </div>
-                  
-                  <div className="address-item">
-                    <div className="address-icon work-icon"></div>
-                    <div className="address-details">
-                      <h3>İş</h3>
-                      <p>Fırat Üniversitesi, Mühendislik Fakültesi, Merkez/Elazığ</p>
-                    </div>
-                    <button className="address-delete-btn" onClick={() => handleDeleteAddress(1)}>×</button>
-                  </div>
+                  ))}
                   
                   <button className="add-address-btn" onClick={handleAddAddress}>
                     <span>+</span> Yeni Adres Ekle
@@ -1172,70 +1129,6 @@ export default function HomePage({ currentUser, authError }) {
                 </div>
                 
                 <div className="filter-group">
-                  <h4 className="filter-group-title">Minimum Sepet Tutarı</h4>
-                  <div className="price-range-slider">
-                    <div className="slider-track">
-                      <div 
-                        className="slider-progress" 
-                        style={{
-                          left: 0,
-                          width: `${(minSepetTutari / 1000) * 100}%`
-                        }}
-                      ></div>
-                      <div 
-                        className="slider-handle" 
-                        style={{left: `${(minSepetTutari / 1000) * 100}%`}}
-                        onMouseEnter={() => setShowSepetTutari(true)}
-                        onMouseLeave={() => !isDraggingSepet && setShowSepetTutari(false)}
-                        onMouseDown={() => {
-                          setShowSepetTutari(true);
-                          setIsDraggingSepet(true);
-                        }}
-                        onMouseUp={() => {
-                          setIsDraggingSepet(false);
-                          setShowSepetTutari(false);
-                        }}
-                      >
-                        <div 
-                          className="slider-value" 
-                          style={{opacity: (showSepetTutari || isDraggingSepet) ? 1 : 0}}
-                        >
-                          {minSepetTutari} TL
-                        </div>
-                      </div>
-                    </div>
-                    <div className="price-range-limits">
-                      <span>0 TL</span>
-                      <span>Tümü</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1000"
-                      value={minSepetTutari}
-                      onChange={(e) => setMinSepetTutari(parseInt(e.target.value))}
-                      onMouseDown={() => {
-                        setShowSepetTutari(true);
-                        setIsDraggingSepet(true);
-                      }}
-                      onMouseUp={() => {
-                        setIsDraggingSepet(false);
-                        setShowSepetTutari(false);
-                      }}
-                      style={{
-                        position: 'absolute',
-                        width: '100%',
-                        top: 0,
-                        height: '20px',
-                        opacity: 0,
-                        cursor: 'pointer',
-                        zIndex: 3
-                      }}
-                    />
-                  </div>
-                </div>
-                
-                <div className="filter-group">
                   <h4 className="filter-group-title">Fiyat Aralığı</h4>
                   <div className="price-range-slider">
                     <div className="slider-track">
@@ -1487,6 +1380,40 @@ export default function HomePage({ currentUser, authError }) {
     setShowAddAddress(true);
   };
   
+  // Load addresses from localStorage on component mount
+  useEffect(() => {
+    const savedAddresses = localStorage.getItem('yuumiAddresses');
+    if (savedAddresses) {
+      try {
+        const parsedAddresses = JSON.parse(savedAddresses);
+        setAddresses(parsedAddresses);
+        
+        // Set the selected address to the one marked active or the first one
+        const activeAddress = parsedAddresses.find(addr => addr.isActive) || parsedAddresses[0];
+        if (activeAddress) {
+          setSelectedAddressId(activeAddress.id);
+        }
+      } catch (error) {
+        console.error('Error parsing saved addresses:', error);
+      }
+    }
+  }, []);
+
+  // Select an address
+  const selectAddress = (id) => {
+    // Update the addresses to mark the selected one as active
+    const updatedAddresses = addresses.map(addr => ({
+      ...addr,
+      isActive: addr.id === id
+    }));
+    
+    setAddresses(updatedAddresses);
+    setSelectedAddressId(id);
+    
+    // Save to localStorage
+    localStorage.setItem('yuumiAddresses', JSON.stringify(updatedAddresses));
+  };
+
   // Save the new address
   const saveNewAddress = () => {
     // Validation
@@ -1509,15 +1436,32 @@ export default function HomePage({ currentUser, authError }) {
       newAddress.details && newAddress.details
     ].filter(Boolean).join(', ');
     
-    // In a real app, you would save this to a database
-    // For demo purposes, we'll just hide the form
-    setShowAddAddress(false);
+    // Create new address object with unique ID
+    const newAddressObj = {
+      id: `address-${Date.now()}`,
+      label: newAddress.label,
+      fullAddress: newAddress.fullAddress + (fullAddressWithDetails ? `, ${fullAddressWithDetails}` : ''),
+      latitude: newAddress.latitude,
+      longitude: newAddress.longitude,
+      details: {
+        buildingName: newAddress.buildingName,
+        blockNumber: newAddress.blockNumber,
+        floor: newAddress.floor,
+        doorNumber: newAddress.doorNumber,
+        additionalNotes: newAddress.details
+      },
+      isActive: addresses.length === 0 // Make active if it's the first address
+    };
     
-    // You would typically save the address to a backend here
-    console.log("Saved address:", {
-      ...newAddress,
-      formattedAddress: `${newAddress.fullAddress}${fullAddressWithDetails ? ', ' + fullAddressWithDetails : ''}`
-    });
+    // Add to addresses state
+    const updatedAddresses = [...addresses, newAddressObj];
+    setAddresses(updatedAddresses);
+    
+    // Save to localStorage
+    localStorage.setItem('yuumiAddresses', JSON.stringify(updatedAddresses));
+    
+    // Hide the form
+    setShowAddAddress(false);
     
     // Reset the form
     setNewAddress({
@@ -1648,13 +1592,22 @@ export default function HomePage({ currentUser, authError }) {
   }, []);
 
   // Add a function to delete an address
-  const handleDeleteAddress = (index) => {
-    // Since we're just simulating this functionality without backend,
-    // let's just add an alert to confirm deletion
+  const handleDeleteAddress = (addressId) => {
     if (window.confirm('Bu adresi silmek istediğinizden emin misiniz?')) {
-      // In a real app, this would call a function to delete from database
-      alert(`${index === 0 ? 'Ev' : 'İş'} adresi silindi.`);
-      // Page would normally reload or update state here
+      // Remove the address from the addresses array
+      const updatedAddresses = addresses.filter(address => address.id !== addressId);
+      setAddresses(updatedAddresses);
+      
+      // If the deleted address was the selected one, select the first remaining address
+      if (addressId === selectedAddressId && updatedAddresses.length > 0) {
+        setSelectedAddressId(updatedAddresses[0].id);
+        
+        // Update active status for the first address
+        updatedAddresses[0].isActive = true;
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('yuumiAddresses', JSON.stringify(updatedAddresses));
     }
   };
   

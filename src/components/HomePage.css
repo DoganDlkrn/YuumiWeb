@@ -3041,7 +3041,7 @@ button[data-action="cancel"] {
 /* Selected time styling */
 .selected-time {
   background-color: #f5f5f5;
-  padding: 8px 12px;
+  padding: 8px 60px;
   border-radius: 6px;
   font-weight: 500;
   color: #333;

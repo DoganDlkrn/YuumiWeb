@@ -175,9 +175,9 @@ export default function WeeklyPlan() {
       let defaultTime;
       if (i === 0) { // Today
         const currentHour = today.getHours();
-        const currentMinute = Math.ceil(today.getMinutes() / 5) * 5; // Round to nearest 5 minutes
+        const currentMinute = today.getMinutes(); // Use actual minutes
         defaultTime = `${currentHour.toString().padStart(2, '0')}:${
-          currentMinute >= 60 ? '00' : currentMinute.toString().padStart(2, '0')
+          currentMinute.toString().padStart(2, '0') // Ensure minutes are always two digits
         }`;
       } else {
         defaultTime = '12:00'; // Default for future days
@@ -221,6 +221,16 @@ export default function WeeklyPlan() {
       setActiveDayIndex(null);
     } else {
       setActiveDayIndex(index);
+    }
+  };
+
+  // Add a new function to handle double click on day indicator for deselecting
+  const handleDayDoubleClick = (index) => {
+    const updatedPlan = [...weeklyPlan];
+    if (updatedPlan[index].completed) {
+      updatedPlan[index].completed = false;
+      setWeeklyPlan(updatedPlan);
+      localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedPlan));
     }
   };
 
@@ -269,6 +279,34 @@ export default function WeeklyPlan() {
     
     // Automatically switch to the new plan
     switchToPlan(activeDayIndex, newPlanId);
+  };
+
+  // Function to delete a plan from the current day
+  const deletePlan = (planIdToDelete) => {
+    const updatedWeeklyPlan = weeklyPlan.map((day, dayIdx) => {
+      if (dayIdx === activeDayIndex) {
+        // Filter out the plan to be deleted
+        const updatedPlans = day.plans.filter(plan => plan.id !== planIdToDelete);
+        return { ...day, plans: updatedPlans };
+      }
+      return day;
+    });
+
+    setWeeklyPlan(updatedWeeklyPlan);
+    localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(updatedWeeklyPlan));
+
+    // If the deleted plan was the selected one, clear selectedPlanInfo
+    if (selectedPlanInfo && selectedPlanInfo.planId === planIdToDelete) {
+      setSelectedPlanInfo(null);
+      // Optionally, select the first plan if available or handle UI appropriately
+      const currentDayPlans = updatedWeeklyPlan[activeDayIndex]?.plans;
+      if (currentDayPlans && currentDayPlans.length > 0) {
+        switchToPlan(activeDayIndex, currentDayPlans[0].id);
+      } else {
+        // Handle case where no plans are left for the day
+        // e.g., by not calling switchToPlan or showing a message
+      }
+    }
   };
 
   // Open time picker
@@ -1351,6 +1389,7 @@ export default function WeeklyPlan() {
                 key={day.id} 
                 className="day-indicator" 
                 onClick={() => goToDay(index)}
+                onDoubleClick={() => handleDayDoubleClick(index)}
               >
                 <div className={`day-circle ${index === activeDayIndex ? 'active' : ''} ${day.completed ? 'completed' : ''}`}>
                   {index + 1}
@@ -1393,6 +1432,24 @@ export default function WeeklyPlan() {
                         <div className="time-note">Saati değiştirmek için tıklayın</div>
                       </div>
                     </div>
+                    {/* Add delete button for plans other than 'Plan 1' */}
+                    {plan.name !== 'Plan 1' ? (
+                      <button 
+                        className="delete-plan-btn" 
+                        onClick={() => deletePlan(plan.id)}
+                        aria-label={`Sil ${plan.name}`}
+                      >
+                        ×
+                      </button>
+                    ) : (
+                      <div 
+                        className="delete-plan-btn" // Aynı sınıfı kullanarak boyutlandırmayı miras al
+                        style={{ visibility: 'hidden', cursor: 'default' }} // Görünmez yap ve işaretçi olmasın
+                        aria-hidden="true"
+                      >
+                        × {/* Boyut içeriğe bağlıysa içerik gerekli olabilir */}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="selections-container">
@@ -1492,7 +1549,7 @@ export default function WeeklyPlan() {
               <button 
                 className="time-confirm-btn"
                 onClick={confirmTimeSelection}
-                disabled={!isTimeValid(timePickerConfig.hours, timePickerConfig.minutes)}
+                // disabled={!isTimeValid(timePickerConfig.hours, timePickerConfig.minutes)} // Temporarily remove disabled for testing time
               >
                 Onayla
               </button>

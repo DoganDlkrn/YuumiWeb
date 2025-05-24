@@ -635,21 +635,21 @@
 }
 
 .cart-btn-label {
-  font-weight: 600;
-  font-size: 16px;
-  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .day-nav-arrow {
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background-color: transparent;
-  font-size: 0; /* Hide text */
   cursor: pointer;
+  border: none;
+  font-size: 0;
   position: relative;
 }
 
@@ -671,11 +671,109 @@
   transform: rotate(45deg);
 }
 
+.day-nav-arrow.next:before {
+  content: '>';
+}
+
 .day-navigation {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 15px 0;
-  margin: 20px 0;
+  margin-bottom: 25px;
+  padding: 10px 0;
   position: relative;
+}
+
+/* Connector line between day indicators */
+.day-connector {
+  position: absolute;
+  top: 22px;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  z-index: -1;
+}
+
+/* Styling for the new delete plan button */
+.delete-plan-btn {
+  background: none;
+  border: none;
+  color: #cc0000; /* Darker red on hover */
+  font-size: 24px; /* Larger X icon */
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 5px;
+  margin-left: 10px; /* Space from the time selector */
+  line-height: 1; /* Align X nicely */
+  transition: color 0.2s ease;
+}
+
+.delete-plan-btn:hover {
+  color: #cc0000; /* Darker red on hover */
+}
+
+/* Adjust day indicator styling for better visual */
+
+/* Center time display within plan slots */
+.time-selector {
+  /* background-color: #f9f9f9; */ /* Original background, can be kept or removed */
+  background-color: transparent; /* Explicitly set to transparent */
+  /* padding: 10px; */ /* Original padding */
+  /* border-radius: 6px; */ /* Original border-radius */
+  cursor: pointer;
+  /* margin-left: auto; */ /* Removed to allow centering if plan-slot-header is flex */
+  display: flex; /* Use flex to center content */
+  flex-direction: column; /* Stack time and note vertically */
+  align-items: center; /* Center items horizontally */
+  justify-content: center; /* Center items vertically if there's extra space */
+  text-align: center; /* Ensure text within is centered by default */
+  flex-grow: 1; /* Allow it to take available space if header is flex */
+}
+
+.selected-time {
+  background-color: #f0f0f0;
+  font-size: 22px; /* Original font size */
+
+  padding: 8px 30px; /* Üst/alt 8px, Sağ/sol 60px olarak güncellendi */
+  border-radius: 6px;
+  font-weight: 700; /* Kalınlaştırıldı */
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative; /* time-note'un mutlak konumlandırılması için */
+  display: flex; /* İçeriği ortalamak için eklendi */
+  flex-direction: column; /* Zaman ve notu alt alta sıralamak için */
+  align-items: center; /* Yatayda ortalamak için */
+  justify-content: center; /* Dikeyde ortalamak için */
+  min-height: 50px; /* İstenilen yüksekliği sağlamak için bir minimum yükseklik eklendi, gerekirse ayarlayın */
+}
+
+.selected-time:hover {
+  background-color: #e5e5e5;
+}
+
+.time-note {
+  font-size: 10px; /* Yazı boyutu küçültüldü */
+  color: #777;
+  margin-top: 4px; /* Saat ile not arasında boşluk */
+  font-weight: 700; /* Daha da kalınlaştırıldı */
+  /* position, left, transform kaldırıldı, flex ile ortalanacak */
+}
+
+/* Ensure the plan-slot-header allows centering of the time-selector */
+.plan-slot-header {
+  display: flex; /* Use flexbox for layout */
+  justify-content: space-between; /* Existing: keeps plan name and time selector apart */
+  align-items: center; /* Vertically align items in the middle */
+  padding: 10px 15px; /* Existing padding */
+  border-bottom: 1px solid #eee; /* Existing border */
+  background-color: #fff; /* Existing background */
+}
+
+/* Adjustments if plan-name takes too much space */
+.plan-name {
+  font-size: 18px; /* Existing */
+  font-weight: 600; /* Existing */
+  color: #333; /* Existing */
+  /* flex-shrink: 0; */ /* Optional: prevent plan name from shrinking if space is tight */
 } 

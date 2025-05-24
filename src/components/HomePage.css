@@ -153,7 +153,28 @@ html, body {
 /* Sağ sütun */
 .nav-right {
   justify-content: flex-end; /* Sağa yasla */
-  gap: 25px; /* Butonlar arasındaki mesafeyi artır */
+  gap: 15px; /* Butonlar arasındaki mesafeyi ayarla */
+  align-items: center; /* Dikey hizalamayı ortala */
+}
+
+/* Chatbot Icon Styling */
+.chatbot-icon {
+  display: flex; /* Flexbox kullanarak içindeki resmi ortalamak için */
+  align-items: center; /* Dikeyde ortala */
+  justify-content: center; /* Yatayda ortala */
+  cursor: pointer;
+  padding: 4px; /* İkon etrafına biraz boşluk */
+  border-radius: 50%; /* Yuvarlak yapmak için */
+  transition: background-color 0.2s ease;
+}
+
+.chatbot-icon:hover {
+  background-color: #f0f0f0; /* Hover durumunda hafif arka plan */
+}
+
+.chatbot-icon img {
+  width: 24px; /* İkon boyutu */
+  height: 24px; /* İkon boyutu */
 }
 
 /* Kullanıcı menüsü */

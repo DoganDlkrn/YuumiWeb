@@ -3,14 +3,29 @@ import "./HomePage.css";
 import logoImg from "../assets/Y.png";
 import basketImg from "../assets/cartblack.png";
 import orderImg from "../assets/order.png"; // Sipariş ikonu için order.png eklendi
+import robotIcon from "../assets/robot.png"; // robot.png import edildi
 import LoginModal from "./LoginModal";
 import RegisterModal from "./RegisterModal";
 import RestaurantGrid from "./RestaurantGrid"; // Import RestaurantGrid component
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 import { signOut, updateProfile, updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import MapComponent from './MapComponent';
 import WeeklyPlan from './WeeklyPlan';
+import AiChefBot from './AiChefBot'; // Chatbot bileşeni import edildi
+import './AiChefBot.css'; // Chatbot stil dosyası import edildi
+import { collection, getDocs } from "firebase/firestore"; // Firestore fonksiyonları import edildi
+
+// Chatbot icon SVG (örnek - kendi SVG'nizi kullanabilirsiniz)
+/*
+const ChatbotIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    <line x1="12" y1="7" x2="12" y2="11"></line>
+    <line x1="9" y1="9" x2="15" y2="9"></line>
+  </svg>
+);
+*/
 
 export default function HomePage({ currentUser, authError }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -302,15 +317,6 @@ export default function HomePage({ currentUser, authError }) {
                       <input 
                         type="radio" 
                         name="sorting" 
-                        checked={selectedSorting === 'mesafe'} 
-                        onChange={() => handleSortingChange('mesafe')}
-                      />
-                      <span className="filter-label">Mesafe</span>
-                    </label>
-                    <label className="filter-option">
-                      <input 
-                        type="radio" 
-                        name="sorting" 
                         checked={selectedSorting === 'puan'} 
                         onChange={() => handleSortingChange('puan')}
                       />
@@ -593,6 +599,7 @@ export default function HomePage({ currentUser, authError }) {
                 <RestaurantGrid 
                   category={activeCategory} 
                   selectedKitchenTypes={selectedKitchenTypes} 
+                  selectedSorting={selectedSorting}
                 />
               )}
             </div>
@@ -965,15 +972,6 @@ export default function HomePage({ currentUser, authError }) {
                       <input 
                         type="radio" 
                         name="sorting" 
-                        checked={selectedSorting === 'mesafe'} 
-                        onChange={() => handleSortingChange('mesafe')}
-                      />
-                      <span className="filter-label">Mesafe</span>
-                    </label>
-                    <label className="filter-option">
-                      <input 
-                        type="radio" 
-                        name="sorting" 
                         checked={selectedSorting === 'puan'} 
                         onChange={() => handleSortingChange('puan')}
                       />
@@ -1253,6 +1251,7 @@ export default function HomePage({ currentUser, authError }) {
               <RestaurantGrid 
                 category={activeCategory} 
                 selectedKitchenTypes={selectedKitchenTypes} 
+                selectedSorting={selectedSorting}
               />
             </div>
           </div>
@@ -1664,6 +1663,57 @@ export default function HomePage({ currentUser, authError }) {
     navigate('/sepetim');
   };
 
+  const [showChatbot, setShowChatbot] = useState(false); // Chatbot görünürlük state'i
+  const [allRestaurantsForBot, setAllRestaurantsForBot] = useState([]); // Chatbot için restoran listesi
+
+  // Chatbot için restoran verilerini çekme
+  const fetchAllRestaurants = async () => {
+    try {
+      const restaurantsRef = collection(db, "restaurants");
+      const restaurantsSnapshot = await getDocs(restaurantsRef);
+      const restaurantsList = [];
+      for (const restaurantDoc of restaurantsSnapshot.docs) {
+        const restaurantData = {
+          id: restaurantDoc.id,
+          ...restaurantDoc.data(),
+          menu: [], // menu veya items olarak gelecek veriyi standartlaştır
+        };
+        // Firestore'dan menu veya items alt koleksiyonunu çek
+        const menuCollectionNames = ['menu', 'items']; // Olası koleksiyon adları
+        for (const menuName of menuCollectionNames) {
+            const menuRef = collection(db, "restaurants", restaurantDoc.id, menuName);
+            const menuSnapshot = await getDocs(menuRef);
+            if (!menuSnapshot.empty) {
+                restaurantData.menu = menuSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                break; // İlk bulunan menüyü kullan
+            }
+        }
+        // Eğer menu Firestore alt koleksiyonu olarak yoksa, ana dokümandaki menuItems veya items alanını kontrol et
+        if (restaurantData.menu.length === 0) {
+            if (restaurantData.menuItems && Array.isArray(restaurantData.menuItems)) {
+                restaurantData.menu = restaurantData.menuItems;
+            } else if (restaurantData.items && Array.isArray(restaurantData.items)) {
+                restaurantData.menu = restaurantData.items;
+            }
+        }
+        restaurantsList.push(restaurantData);
+      }
+      setAllRestaurantsForBot(restaurantsList);
+      console.log("Chatbot için restoranlar yüklendi:", restaurantsList);
+    } catch (error) {
+      console.error("Restoranlar chatbot için yüklenirken hata:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllRestaurants(); // Component mount olduğunda restoranları yükle
+    // ... (diğer useEffect içeriği)
+  }, []);
+
+  const toggleChatbot = () => {
+    setShowChatbot(!showChatbot);
+  };
+
   return (
     <div className="homepage">
       {loading && (
@@ -1709,6 +1759,10 @@ export default function HomePage({ currentUser, authError }) {
         </div>
         
         <div className="nav-right">
+          {/* Chatbot Icon - Moved here */}
+          <div className="nav-icon chatbot-icon" onClick={toggleChatbot} title="Yuumi AI Chef">
+            <img src={robotIcon} alt="Yuumi AI Chef" style={{ width: '24px', height: '24px' }} />
+          </div>
           {currentUser ? (
             <div className="profile-container" ref={profileMenuRef}>
               <button className="profile-button" onClick={toggleProfileMenu}>
@@ -1919,6 +1973,14 @@ export default function HomePage({ currentUser, authError }) {
           </div>
         </div>
       )}
+
+      {/* Chatbot Component */}
+      {showChatbot && 
+        <AiChefBot 
+          restaurants={allRestaurantsForBot} 
+          onClose={toggleChatbot} 
+        />
+      }
     </div>
   );
 }

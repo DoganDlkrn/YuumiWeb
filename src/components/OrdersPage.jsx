@@ -35,42 +35,7 @@ export default function OrdersPage() {
           setPastOrders(JSON.parse(storedPastOrders));
         }
 
-        // In a real application, we would fetch from Firestore
-        // This code is commented out but shows how it would be implemented
-        /*
-        const ordersRef = collection(db, 'orders');
-        const activeOrdersQuery = query(
-          ordersRef,
-          where('userId', '==', user.uid),
-          where('status', 'in', ['processing', 'preparing', 'delivering']),
-          orderBy('orderDate', 'desc')
-        );
-        const pastOrdersQuery = query(
-          ordersRef,
-          where('userId', '==', user.uid),
-          where('status', 'in', ['delivered', 'canceled']),
-          orderBy('orderDate', 'desc')
-        );
-
-        const [activeOrdersSnapshot, pastOrdersSnapshot] = await Promise.all([
-          getDocs(activeOrdersQuery),
-          getDocs(pastOrdersQuery)
-        ]);
-
-        setActiveOrders(
-          activeOrdersSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-        );
-
-        setPastOrders(
-          pastOrdersSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-        );
-        */
+       
       } catch (error) {
         console.error('Error fetching orders:', error);
       }
@@ -237,6 +202,11 @@ export default function OrdersPage() {
 
   return (
     <div className="orders-page-container">
+      {/* Üst bar ekleme */}
+      <div className="orders-top-bar">
+        <h1 className="orders-top-title">Siparişlerim</h1>
+      </div>
+
       <div className="orders-page-header">
         <button className="back-btn" onClick={goBack}>
           ← Geri

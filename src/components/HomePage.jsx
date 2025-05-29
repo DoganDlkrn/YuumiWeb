@@ -16,16 +16,7 @@ import AiChefBot from './AiChefBot'; // Chatbot bileşeni import edildi
 import './AiChefBot.css'; // Chatbot stil dosyası import edildi
 import { collection, getDocs } from "firebase/firestore"; // Firestore fonksiyonları import edildi
 
-// Chatbot icon SVG (örnek - kendi SVG'nizi kullanabilirsiniz)
-/*
-const ChatbotIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-    <line x1="12" y1="7" x2="12" y2="11"></line>
-    <line x1="9" y1="9" x2="15" y2="9"></line>
-  </svg>
-);
-*/
+
 
 export default function HomePage({ currentUser, authError }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -47,6 +38,11 @@ export default function HomePage({ currentUser, authError }) {
   const [isDraggingMin, setIsDraggingMin] = useState(false);
   const [isDraggingMax, setIsDraggingMax] = useState(false);
   const [showAllKitchenTypes, setShowAllKitchenTypes] = useState(false);
+  
+  // Add state to track if price filter is applied
+  const [isPriceFilterApplied, setIsPriceFilterApplied] = useState(false);
+  const [appliedMinPrice, setAppliedMinPrice] = useState(0);
+  const [appliedMaxPrice, setAppliedMaxPrice] = useState(500);
   
   // İletişim tercihleri için toggle state'leri
   const [emailPreference, setEmailPreference] = useState(true);
@@ -478,22 +474,34 @@ export default function HomePage({ currentUser, authError }) {
                       <div 
                         className="slider-progress" 
                         style={{
-                          left: `${(minPriceValue / 1000) * 100}%`,
-                          width: `${((maxPriceValue - minPriceValue) / 1000) * 100}%`
+                          left: `${(minPriceValue / 500) * 100}%`,
+                          width: `${((maxPriceValue - minPriceValue) / 500) * 100}%`
                         }}
                       ></div>
                       <div 
-                        className="slider-handle" 
-                        style={{left: `${(minPriceValue / 1000) * 100}%`}}
-                        onMouseEnter={() => setShowMinPrice(true)}
-                        onMouseLeave={() => !isDraggingMin && setShowMinPrice(false)}
-                        onMouseDown={() => {
+                        className={`slider-handle ${isDraggingMin ? 'dragging' : ''}`}
+                        style={{left: `${(minPriceValue / 500) * 100}%`}}
+                        onMouseDown={(e) => {
                           setShowMinPrice(true);
                           setIsDraggingMin(true);
+                          document.addEventListener('mousemove', handleMinDrag);
+                          document.addEventListener('mouseup', () => {
+                            setIsDraggingMin(false);
+                            setShowMinPrice(false);
+                            document.removeEventListener('mousemove', handleMinDrag);
+                          }, { once: true });
+                          e.preventDefault();
                         }}
-                        onMouseUp={() => {
-                          setIsDraggingMin(false);
-                          setShowMinPrice(false);
+                        onTouchStart={(e) => {
+                          setShowMinPrice(true);
+                          setIsDraggingMin(true);
+                          document.addEventListener('touchmove', handleMinTouchDrag);
+                          document.addEventListener('touchend', () => {
+                            setIsDraggingMin(false);
+                            setShowMinPrice(false);
+                            document.removeEventListener('touchmove', handleMinTouchDrag);
+                          }, { once: true });
+                          e.preventDefault();
                         }}
                       >
                         <div 
@@ -504,17 +512,29 @@ export default function HomePage({ currentUser, authError }) {
                         </div>
                       </div>
                       <div 
-                        className="slider-handle" 
-                        style={{left: `${(maxPriceValue / 1000) * 100}%`}}
-                        onMouseEnter={() => setShowMaxPrice(true)}
-                        onMouseLeave={() => !isDraggingMax && setShowMaxPrice(false)}
-                        onMouseDown={() => {
+                        className={`slider-handle ${isDraggingMax ? 'dragging' : ''}`}
+                        style={{left: `${(maxPriceValue / 500) * 100}%`}}
+                        onMouseDown={(e) => {
                           setShowMaxPrice(true);
                           setIsDraggingMax(true);
+                          document.addEventListener('mousemove', handleMaxDrag);
+                          document.addEventListener('mouseup', () => {
+                            setIsDraggingMax(false);
+                            setShowMaxPrice(false);
+                            document.removeEventListener('mousemove', handleMaxDrag);
+                          }, { once: true });
+                          e.preventDefault();
                         }}
-                        onMouseUp={() => {
-                          setIsDraggingMax(false);
-                          setShowMaxPrice(false);
+                        onTouchStart={(e) => {
+                          setShowMaxPrice(true);
+                          setIsDraggingMax(true);
+                          document.addEventListener('touchmove', handleMaxTouchDrag);
+                          document.addEventListener('touchend', () => {
+                            setIsDraggingMax(false);
+                            setShowMaxPrice(false);
+                            document.removeEventListener('touchmove', handleMaxTouchDrag);
+                          }, { once: true });
+                          e.preventDefault();
                         }}
                       >
                         <div 
@@ -529,64 +549,26 @@ export default function HomePage({ currentUser, authError }) {
                       <span>{minPriceValue} TL</span>
                       <span>{maxPriceValue} TL</span>
                     </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1000"
-                      value={minPriceValue}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (value < maxPriceValue) {
-                          setMinPriceValue(value);
-                        }
-                      }}
-                      onMouseDown={() => {
-                        setShowMinPrice(true);
-                        setIsDraggingMin(true);
-                      }}
-                      onMouseUp={() => {
-                        setIsDraggingMin(false);
-                        setShowMinPrice(false);
-                      }}
-                      style={{
-                        position: 'absolute',
-                        width: '100%',
-                        top: 0,
-                        height: '20px',
-                        opacity: 0,
-                        cursor: 'pointer',
-                        zIndex: 3
-                      }}
-                    />
-                    <input
-                      type="range"
-                      min="0"
-                      max="1000"
-                      value={maxPriceValue}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (value > minPriceValue) {
-                          setMaxPriceValue(value);
-                        }
-                      }}
-                      onMouseDown={() => {
-                        setShowMaxPrice(true);
-                        setIsDraggingMax(true);
-                      }}
-                      onMouseUp={() => {
-                        setIsDraggingMax(false);
-                        setShowMaxPrice(false);
-                      }}
-                      style={{
-                        position: 'absolute',
-                        width: '100%',
-                        top: 0,
-                        height: '20px',
-                        opacity: 0,
-                        cursor: 'pointer',
-                        zIndex: 4
-                      }}
-                    />
+                  </div>
+                  
+                  {/* Fiyat filtresi butonları */}
+                  <div className="price-filter-buttons">
+                    <button 
+                      className={`filter-btn apply-btn ${isPriceFilterApplied ? 'active' : ''}`} 
+                      onClick={applyPriceFilter}
+                      title={`${minPriceValue} TL - ${maxPriceValue} TL aralığındaki restoranları filtrele`}
+                    >
+                      {isPriceFilterApplied ? 'Filtre Aktif' : 'Filtrele'}
+                    </button>
+                    {isPriceFilterApplied && (
+                      <button 
+                        className="filter-btn reset-btn" 
+                        onClick={resetPriceFilter}
+                        title="Fiyat filtresini kaldır"
+                      >
+                        Sıfırla
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -600,6 +582,9 @@ export default function HomePage({ currentUser, authError }) {
                   category={activeCategory} 
                   selectedKitchenTypes={selectedKitchenTypes} 
                   selectedSorting={selectedSorting}
+                  minPrice={appliedMinPrice}
+                  maxPrice={appliedMaxPrice}
+                  isPriceFilterApplied={isPriceFilterApplied}
                 />
               )}
             </div>
@@ -1133,22 +1118,34 @@ export default function HomePage({ currentUser, authError }) {
                       <div 
                         className="slider-progress" 
                         style={{
-                          left: `${(minPriceValue / 1000) * 100}%`,
-                          width: `${((maxPriceValue - minPriceValue) / 1000) * 100}%`
+                          left: `${(minPriceValue / 500) * 100}%`,
+                          width: `${((maxPriceValue - minPriceValue) / 500) * 100}%`
                         }}
                       ></div>
                       <div 
-                        className="slider-handle" 
-                        style={{left: `${(minPriceValue / 1000) * 100}%`}}
-                        onMouseEnter={() => setShowMinPrice(true)}
-                        onMouseLeave={() => !isDraggingMin && setShowMinPrice(false)}
-                        onMouseDown={() => {
+                        className={`slider-handle ${isDraggingMin ? 'dragging' : ''}`}
+                        style={{left: `${(minPriceValue / 500) * 100}%`}}
+                        onMouseDown={(e) => {
                           setShowMinPrice(true);
                           setIsDraggingMin(true);
+                          document.addEventListener('mousemove', handleMinDrag);
+                          document.addEventListener('mouseup', () => {
+                            setIsDraggingMin(false);
+                            setShowMinPrice(false);
+                            document.removeEventListener('mousemove', handleMinDrag);
+                          }, { once: true });
+                          e.preventDefault();
                         }}
-                        onMouseUp={() => {
-                          setIsDraggingMin(false);
-                          setShowMinPrice(false);
+                        onTouchStart={(e) => {
+                          setShowMinPrice(true);
+                          setIsDraggingMin(true);
+                          document.addEventListener('touchmove', handleMinTouchDrag);
+                          document.addEventListener('touchend', () => {
+                            setIsDraggingMin(false);
+                            setShowMinPrice(false);
+                            document.removeEventListener('touchmove', handleMinTouchDrag);
+                          }, { once: true });
+                          e.preventDefault();
                         }}
                       >
                         <div 
@@ -1159,17 +1156,29 @@ export default function HomePage({ currentUser, authError }) {
                         </div>
                       </div>
                       <div 
-                        className="slider-handle" 
-                        style={{left: `${(maxPriceValue / 1000) * 100}%`}}
-                        onMouseEnter={() => setShowMaxPrice(true)}
-                        onMouseLeave={() => !isDraggingMax && setShowMaxPrice(false)}
-                        onMouseDown={() => {
+                        className={`slider-handle ${isDraggingMax ? 'dragging' : ''}`}
+                        style={{left: `${(maxPriceValue / 500) * 100}%`}}
+                        onMouseDown={(e) => {
                           setShowMaxPrice(true);
                           setIsDraggingMax(true);
+                          document.addEventListener('mousemove', handleMaxDrag);
+                          document.addEventListener('mouseup', () => {
+                            setIsDraggingMax(false);
+                            setShowMaxPrice(false);
+                            document.removeEventListener('mousemove', handleMaxDrag);
+                          }, { once: true });
+                          e.preventDefault();
                         }}
-                        onMouseUp={() => {
-                          setIsDraggingMax(false);
-                          setShowMaxPrice(false);
+                        onTouchStart={(e) => {
+                          setShowMaxPrice(true);
+                          setIsDraggingMax(true);
+                          document.addEventListener('touchmove', handleMaxTouchDrag);
+                          document.addEventListener('touchend', () => {
+                            setIsDraggingMax(false);
+                            setShowMaxPrice(false);
+                            document.removeEventListener('touchmove', handleMaxTouchDrag);
+                          }, { once: true });
+                          e.preventDefault();
                         }}
                       >
                         <div 
@@ -1184,64 +1193,26 @@ export default function HomePage({ currentUser, authError }) {
                       <span>{minPriceValue} TL</span>
                       <span>{maxPriceValue} TL</span>
                     </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1000"
-                      value={minPriceValue}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (value < maxPriceValue) {
-                          setMinPriceValue(value);
-                        }
-                      }}
-                      onMouseDown={() => {
-                        setShowMinPrice(true);
-                        setIsDraggingMin(true);
-                      }}
-                      onMouseUp={() => {
-                        setIsDraggingMin(false);
-                        setShowMinPrice(false);
-                      }}
-                      style={{
-                        position: 'absolute',
-                        width: '100%',
-                        top: 0,
-                        height: '20px',
-                        opacity: 0,
-                        cursor: 'pointer',
-                        zIndex: 3
-                      }}
-                    />
-                    <input
-                      type="range"
-                      min="0"
-                      max="1000"
-                      value={maxPriceValue}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (value > minPriceValue) {
-                          setMaxPriceValue(value);
-                        }
-                      }}
-                      onMouseDown={() => {
-                        setShowMaxPrice(true);
-                        setIsDraggingMax(true);
-                      }}
-                      onMouseUp={() => {
-                        setIsDraggingMax(false);
-                        setShowMaxPrice(false);
-                      }}
-                      style={{
-                        position: 'absolute',
-                        width: '100%',
-                        top: 0,
-                        height: '20px',
-                        opacity: 0,
-                        cursor: 'pointer',
-                        zIndex: 4
-                      }}
-                    />
+                  </div>
+                  
+                  {/* Fiyat filtresi butonları */}
+                  <div className="price-filter-buttons">
+                    <button 
+                      className={`filter-btn apply-btn ${isPriceFilterApplied ? 'active' : ''}`} 
+                      onClick={applyPriceFilter}
+                      title={`${minPriceValue} TL - ${maxPriceValue} TL aralığındaki restoranları filtrele`}
+                    >
+                      {isPriceFilterApplied ? 'Filtre Aktif' : 'Filtrele'}
+                    </button>
+                    {isPriceFilterApplied && (
+                      <button 
+                        className="filter-btn reset-btn" 
+                        onClick={resetPriceFilter}
+                        title="Fiyat filtresini kaldır"
+                      >
+                        Sıfırla
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1252,6 +1223,9 @@ export default function HomePage({ currentUser, authError }) {
                 category={activeCategory} 
                 selectedKitchenTypes={selectedKitchenTypes} 
                 selectedSorting={selectedSorting}
+                minPrice={appliedMinPrice}
+                maxPrice={appliedMaxPrice}
+                isPriceFilterApplied={isPriceFilterApplied}
               />
             </div>
           </div>
@@ -1714,6 +1688,157 @@ export default function HomePage({ currentUser, authError }) {
     setShowChatbot(!showChatbot);
   };
 
+  const handleActualAddToCart = (restaurantId, restaurantName, menuItemId, menuItemName, quantity) => {
+    console.log(`HomePage: GERÇEK SEPETE EKLEME İŞLEMİ: Restoran ID: ${restaurantId}, Yemek ID: ${menuItemId}, Adet: ${quantity}`);
+
+    const restaurant = allRestaurantsForBot.find(r => r.id === restaurantId);
+    const menuItem = restaurant?.menu?.find(m => m.id === menuItemId || (m.isim || m.name)?.toLowerCase() === menuItemName?.toLowerCase());
+
+    if (!restaurant || !menuItem) {
+      console.error("Sepete eklenecek restoran veya yemek bulunamadı!", { restaurantId, restaurantName, menuItemName, menuItemId });
+      alert("Üzgünüz, bir hata oluştu, ürün sepete eklenemedi.");
+      return;
+    }
+
+    const currentCart = JSON.parse(sessionStorage.getItem('yuumiCart') || '[]');
+    const existingItemIndex = currentCart.findIndex(
+      item => item.itemId === (menuItem.id || menuItem.isim) && item.restaurantId === restaurant.id && !item.planInfo
+    );
+
+    const priceString = typeof menuItem.fiyat === 'number' ? `₺${menuItem.fiyat.toFixed(2)}` : menuItem.fiyat || "₺0.00";
+
+    if (existingItemIndex > -1) {
+      currentCart[existingItemIndex].quantity += quantity;
+    } else {
+      currentCart.push({
+        id: `cart-${Date.now()}-${menuItem.id || menuItem.isim}`, // Benzersiz sepet item ID'si
+        restaurantId: restaurant.id,
+        restaurantName: restaurant.isim, // veya restaurant.name
+        restaurantImage: restaurant.logoUrl || restaurant.image, // logoUrl veya image
+        itemId: menuItem.id || menuItem.isim, // menuItem.id veya menuItem.isim
+        itemName: menuItem.isim, // veya menuItem.name
+        price: priceString,
+        quantity: quantity,
+        planInfo: null 
+      });
+    }
+    sessionStorage.setItem('yuumiCart', JSON.stringify(currentCart));
+    alert(`${menuItem.isim} sepetinize eklendi!`); 
+    // Sepet ikonundaki sayacı güncellemek için bir fonksiyon çağrılabilir (eğer varsa)
+    // updateCartIconCount(); 
+  };
+
+  // Fiyat filtresi uygulama fonksiyonu
+  const applyPriceFilter = () => {
+    // Konsola log basalım
+    console.log(`Fiyat filtresi uygulanıyor - Aralık: ${minPriceValue} TL - ${maxPriceValue} TL`);
+    
+    // Değerleri doğrudan state'e ayarla (asenkron değişiklikler)
+    setAppliedMinPrice(minPriceValue);
+    setAppliedMaxPrice(maxPriceValue);
+    setIsPriceFilterApplied(true);
+
+    // Bir sonraki render'da isPriceFilterApplied true olacak
+    console.log("Fiyat filtresi aktifleştirildi");
+  };
+
+  // Fiyat filtresini sıfırlama fonksiyonu
+  const resetPriceFilter = () => {
+    // Konsola log basalım
+    console.log('Fiyat filtresi sıfırlanıyor');
+    
+    // Değerleri doğrudan state'e ayarla
+    setAppliedMinPrice(0);
+    setAppliedMaxPrice(500);
+    setMinPriceValue(0);
+    setMaxPriceValue(500);
+    setIsPriceFilterApplied(false);
+    
+    console.log('Fiyat filtresi sıfırlandı');
+  };
+
+  // Fare ile sürükleme işleyicileri
+  const handleMinDrag = (e) => {
+    const sliderTrack = document.querySelector('.slider-track');
+    if (!sliderTrack) return;
+    
+    const rect = sliderTrack.getBoundingClientRect();
+    const trackWidth = rect.width;
+    const offsetX = e.clientX - rect.left;
+    
+    // 0-500 aralığında değer hesaplama
+    let newValue = Math.round((offsetX / trackWidth) * 500);
+    
+    // Min değerin max değerden büyük olmamasını sağla
+    newValue = Math.min(newValue, maxPriceValue - 10);
+    
+    // Alt sınır kontrolü
+    newValue = Math.max(0, newValue);
+    
+    setMinPriceValue(newValue);
+  };
+  
+  const handleMaxDrag = (e) => {
+    const sliderTrack = document.querySelector('.slider-track');
+    if (!sliderTrack) return;
+    
+    const rect = sliderTrack.getBoundingClientRect();
+    const trackWidth = rect.width;
+    const offsetX = e.clientX - rect.left;
+    
+    // 0-500 aralığında değer hesaplama
+    let newValue = Math.round((offsetX / trackWidth) * 500);
+    
+    // Max değerin min değerden küçük olmamasını sağla
+    newValue = Math.max(newValue, minPriceValue + 10);
+    
+    // Üst sınır kontrolü
+    newValue = Math.min(500, newValue);
+    
+    setMaxPriceValue(newValue);
+  };
+  
+  // Dokunmatik cihazlar için sürükleme işleyicileri
+  const handleMinTouchDrag = (e) => {
+    const sliderTrack = document.querySelector('.slider-track');
+    if (!sliderTrack || !e.touches[0]) return;
+    
+    const rect = sliderTrack.getBoundingClientRect();
+    const trackWidth = rect.width;
+    const offsetX = e.touches[0].clientX - rect.left;
+    
+    // 0-500 aralığında değer hesaplama
+    let newValue = Math.round((offsetX / trackWidth) * 500);
+    
+    // Min değerin max değerden büyük olmamasını sağla
+    newValue = Math.min(newValue, maxPriceValue - 10);
+    
+    // Alt sınır kontrolü
+    newValue = Math.max(0, newValue);
+    
+    setMinPriceValue(newValue);
+  };
+  
+  const handleMaxTouchDrag = (e) => {
+    const sliderTrack = document.querySelector('.slider-track');
+    if (!sliderTrack || !e.touches[0]) return;
+    
+    const rect = sliderTrack.getBoundingClientRect();
+    const trackWidth = rect.width;
+    const offsetX = e.touches[0].clientX - rect.left;
+    
+    // 0-500 aralığında değer hesaplama
+    let newValue = Math.round((offsetX / trackWidth) * 500);
+    
+    // Max değerin min değerden küçük olmamasını sağla
+    newValue = Math.max(newValue, minPriceValue + 10);
+    
+    // Üst sınır kontrolü
+    newValue = Math.min(500, newValue);
+    
+    setMaxPriceValue(newValue);
+  };
+
   return (
     <div className="homepage">
       {loading && (
@@ -1979,6 +2104,21 @@ export default function HomePage({ currentUser, authError }) {
         <AiChefBot 
           restaurants={allRestaurantsForBot} 
           onClose={toggleChatbot} 
+          onAddToCart={(restaurantId, restaurantName, menuItemId, menuItemName, quantity) => {
+            const targetRestaurant = allRestaurantsForBot.find(r => (r.isim || r.name)?.toLowerCase() === restaurantName?.toLowerCase());
+            // Menü öğesini ID veya isim ile bulmaya çalış
+            let menuItem = null;
+            if (targetRestaurant && targetRestaurant.menu) {
+                menuItem = targetRestaurant.menu.find(m => m.id === menuItemId || (m.isim || m.name)?.toLowerCase() === menuItemName?.toLowerCase());
+            }
+
+            if (targetRestaurant && menuItem) {
+                handleActualAddToCart(targetRestaurant.id, targetRestaurant.isim, menuItem.id || menuItem.isim, menuItem.isim, quantity);
+            } else {
+                console.error("İstenen restoran veya yemek AiChefBot -> onAddToCart içinde bulunamadı:", restaurantName, menuItemName);
+                alert("Üzgünüm, istenen restoran veya yemek bulunamadı.");
+            }
+        }}
         />
       }
     </div>

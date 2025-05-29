@@ -10,11 +10,12 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true // Tarayıcı ortamında kullanım için
 });
 
-const AiChefBot = ({ restaurants, onClose }) => {
+const AiChefBot = ({ restaurants, onClose, onAddToCart }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const [focusedRestaurant, setFocusedRestaurant] = useState(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -36,122 +37,109 @@ const AiChefBot = ({ restaurants, onClose }) => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
-    const userMessage = {
-      role: 'user',
-      content: input
-    };
-    setMessages(prevMessages => [...prevMessages, userMessage]);
+    const newUserMessage = { role: 'user', content: input };
+    setMessages(prev => [...prev, newUserMessage]);
     setInput('');
     setIsLoading(true);
 
-    // Restoran bilgilerini ve TÜM menü öğelerinin isimlerini prompt'a ekle
-    const restaurantInfoForPrompt = restaurants.map(r => {
-      const menuItems = r.items || r.menu || []; // "items" veya "menu" dizisini kontrol et
-      const menuNames = menuItems.length > 0
-        ? menuItems.map(item => item.name || item.isim).join(', ') // Sadece isimleri al
-        : 'Menü bilgisi şu an için kısıtlı';
-      return `${r.isim || r.name} (Kategori: ${r.kategori || r.category}. Menüde bulunanlar: ${menuNames})`;
-    }).join('; ---- '); // Restoranları birbirinden ayırmak için daha belirgin bir ayraç
+    let systemMessageContentForAPI = "";
+    let toolsToUseForAPI = undefined;
+    let toolChoiceToUseForAPI = undefined;
 
-    const systemMessageContent = `Sen Yuumi AI Chef adında, kullanıcılara yemek ve restoran önerilerinde bulunan bir yapay zeka asistanısın. Amacın, kullanıcının yeme isteğine en uygun seçenekleri sunmak ve eğer isterse sipariş vermesine veya haftalık planına eklemesine yardımcı olmaktır. Samimi, arkadaş canlısı ve davetkar bir dil kullan. Fiyat bilgisi verme.
+    if (focusedRestaurant) {
+      // AŞAMA 2: Spesifik Restoran Menüsü ile Sorgulama
+      const currentFocusedRestaurantInfo = `RESTORAN: ${focusedRestaurant.isim}\nKATEGORİ: ${focusedRestaurant.kategori}\nMENÜSÜ:\n  ${(focusedRestaurant.menu || []).map(item => `- ${item.isim} ${item.aciklama ? '('+item.aciklama+')' : ''}`).join('\n  ') || '  Menü bilgisi kısıtlı.'}`;
+      systemMessageContentForAPI = `Sen Yuumi AI Chef adında, son derece yardımsever, dikkatli ve bilgili bir yemek öneri asistanısın.
+Kullanıcı şu anda "${focusedRestaurant.isim}" restoranı hakkında konuşuyor veya bu restorandan bir şeyler istiyor.
+SANA SAĞLANAN BİLGİ KAYNAĞI (BAŞKA BİR YERE BAKMA, SADECE BUNU KULLAN):
+${currentFocusedRestaurantInfo}
 
-Mevcut restoranlar, kategorileri ve menü detayları şunlardır:
-${restaurantInfoForPrompt}
+ANA GÖREVLERİN VE DAVRANIŞ KURALLARIN:
+1.  **Yemek ve Restoran Önerisi (Restoran Odaklı):**
+    *   Kullanıcının isteğini (belirttiği malzemeler, ana yemek adı, yemek türü, restoran adı vb.) dikkatlice analiz et.
+    *   Kullanıcı spesifik bir restoran adı verirse (örn: "${focusedRestaurant.isim}'de ne var?"), **SADECE VE SADECE** o restoran için sana verdiğim menü listesini (yukarıdaki ${currentFocusedRestaurantInfo} içinde) dikkatlice incele.
+    *   **EŞLEŞTİRME KURALI:** Kullanıcının sorduğu bir yemek adı (örn: "tavuk döner"), menüdeki bir yemek adıyla (örn: "Tavuk Döner Dürüm") **TAM OLARAK AYNI OLMASA BİLE**, eğer kullanıcının sorduğu ifade menüdeki ifadenin **ANA BİLEŞENİNİ veya KISALTMASINI** içeriyorsa (örn: "tavuk döner" -> "Tavuk Döner Dürüm" ile eşleşir; "dürüm" -> "Tavuk Döner Dürüm" veya "Et Döner Dürüm" ile eşleşebilir), bunu geçerli bir bulgu olarak kabul et.
+    *   Eğer menüde kullanıcının sorduğu spesifik bir yemek (veya yukarıdaki eşleştirme kuralına göre yakın bir seçenek) varsa, "Evet, ${focusedRestaurant.isim}'nin menüsünde [Menüdeki Tam Yemek Adı] bulunuyor! [İsteğe bağlı ek bilgi veya soru]" gibi net bir cevap ver. (Örneğin, kullanıcı "tavuk döner" sorarsa ve menüde "Tavuk Döner Dürüm" varsa, "Evet, ${focusedRestaurant.isim}'nin menüsünde Tavuk Döner Dürüm bulunuyor!" demelisin.)
+    *   Eğer o restoranın menüsünde kullanıcının istediğine yakın veya onu içeren HİÇBİR ürün yoksa, "Maalesef, ${focusedRestaurant.isim}'nin menüsünde [Aranan Yemek] veya benzeri bir seçenek göremedim. Ama menüde şunlar var: [O restorandan birkaç alakasız olmayan örnek]. Ya da başka bir restorana bakabiliriz." gibi bir cevap ver.
+    *   ASLA fiyat bilgisi verme.
 
-ANA GÖREVLERİN:
-1.  **Yemek ve Restoran Önerisi:** Kullanıcının belirttiği malzemelere (örn: marul, tavuk, acı), yemek türlerine (örn: çorba, kebap, tatlı), açıklamalara veya genel isteklere (örn: hafif bir şeyler) göre yukarıdaki listeden uygun yemekleri ve bu yemekleri bulabileceği restoranları öner.
-    *   Kullanıcı spesifik bir restoran adı verirse (örn: "Tatlı Dünyası'ndan bir tatlı"), öncelikle o restoranın menüsünden öneri yap.
-    *   Kullanıcı genel bir istekte bulunursa (örn: "canım kebap çekti"), uygun kategorideki restoranları ve menülerini değerlendir.
-    *   Eğer isteğe uygun bir şey bulamazsan, kibarca belirt ve alternatif sunmaya çalış.
-
-2.  **Sepete Ekleme (Function Calling):** Kullanıcı bir yemeği sepetine eklemek istediğini net bir şekilde ifade ederse (örn: "Harput Kebap'tan Adana Kebap sipariş etmek istiyorum", "Bunu sepete ekle"), aşağıdaki kurallara göre 'addItemToCart' fonksiyonunu çağır:
-    *   Gerekli bilgiler: 'restaurantName' (restoranın tam adı), 'menuItemName' (yemeğin tam adı).
-    *   'quantity' isteğe bağlıdır, belirtilmezse 1 kabul et.
-    *   Eğer restoran veya yemek adı belirsizse, fonksiyonu çağırmadan önce kullanıcıdan netleştirmesini iste.
-
-3.  **Haftalık Plana Ekleme (Function Calling):** Kullanıcı bir yemeği haftalık planına eklemek istediğini belirtirse (örn: "Pazartesi öğlene Elazığ Sofrası'ndan Kuru Fasulye ekle"), 'addMealToWeeklyPlan' fonksiyonunu çağır:
-    *   Gerekli bilgiler: 'dayOfWeek' (Pazartesi, Salı vb.), 'mealTime' (Öğle, Akşam vb.), 'restaurantName', 'menuItemName'.
-    *   Bilgiler eksikse, fonksiyonu çağırmadan önce kullanıcıdan tamamlamasını iste.
+2.  **Sepete Ekleme (Fonksiyon Çağırma - 'addItemToCart'):**
+    *   Kullanıcı bir yemeği sepetine eklemek istediğini net bir şekilde ifade ederse (örn: "profiterolü sepete ekle", "Adana Kebap sipariş etmek istiyorum", "Tamam, bunu sepete atalım", "Evet, ekleyebilirsin"), 'addItemToCart' fonksiyonunu çağırmalısın.
+    *   'restaurantName' parametresi için "${focusedRestaurant.isim}" kullanmalısın.
+    *   'menuItemName' parametresini kullanıcının mesajından veya menüdeki eşleşen yemekten (eşleştirme kuralına göre bulduğun tam menü öğesi adını) çıkar.
+    *   Eğer 'menuItemName' net değilse, fonksiyonu çağırma, kullanıcıya sor.
 
 GENEL İLKELER:
-*   Kullanıcıya doğrudan "Ne yapmak istersin?" gibi genel sorular yerine, onun ifadelerinden niyetini anlamaya çalış.
-*   Önerilerini yaparken, menüdeki açıklamaları (örn: "Acılı, lavaş ve salata ile") dikkate al.
-*   Kullanıcıya hangi restoranın hangi yemeği sunduğunu net bir şekilde belirt.`;
+*   Konuşmanın akışını ve önceki mesajları dikkate al.
+*   Verilen menü bilgisine %100 sadık kal. Bilmiyorsan, bilmiyorum de.
+*   Cevapların net ve doğrudan olsun.`;
+      toolsToUseForAPI = tools; // Fonksiyonları bu aşamada kullanabiliriz
+      toolChoiceToUseForAPI = "auto";
+      console.log(`Odaklanılan restoran: ${focusedRestaurant.isim}. Sistem mesajı ve araçlar güncellendi (Detaylı Eşleştirme Kuralı Eklendi).`);
 
-    const tools = [
-      {
-        type: "function",
-        function: {
-          name: "addItemToCart",
-          description: "Kullanıcının belirttiği restorandan, belirttiği yemeği sepete ekler.",
-          parameters: {
-            type: "object",
-            properties: {
-              restaurantName: {
-                type: "string",
-                description: "Yemeğin sipariş edileceği restoranın adı, örneğin 'Harput Kebap Salonu'",
-              },
-              menuItemName: {
-                type: "string",
-                description: "Sipariş edilecek yemeğin adı, örneğin 'Adana Kebap'",
-              },
-              quantity: {
-                type: "integer",
-                description: "Sipariş edilecek yemek adedi, varsayılan 1",
-                default: 1,
-              },
-            },
-            required: ["restaurantName", "menuItemName"],
-          },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "addMealToWeeklyPlan",
-          description: "Kullanıcının belirttiği bir yemeği, belirttiği gün ve öğün için haftalık yemek planına ekler.",
-          parameters: {
-            type: "object",
-            properties: {
-              dayOfWeek: { 
-                type: "string", 
-                description: "Yemeğin ekleneceği haftanın günü, örneğin 'Pazartesi'",
-              },
-              mealTime: { 
-                type: "string",
-                description: "Yemeğin ekleneceği öğün veya zaman, örneğin 'Öğle Yemeği'",
-              },
-              restaurantName: {
-                type: "string",
-                description: "Yemeğin alınacağı restoranın adı",
-              },
-              menuItemName: {
-                type: "string",
-                description: "Haftalık plana eklenecek yemeğin adı",
-              },
-            },
-            required: ["dayOfWeek", "mealTime", "restaurantName", "menuItemName"],
-          },
-        },
-      },
+    } else {
+      // AŞAMA 1: Restoran Tespiti veya Genel Sorgu (focusedRestaurant TANIMLI DEĞİL)
+      const allRestaurantsOverview = restaurants.map(r => {
+        const menuItems = r.menu || [];
+        const sampleMenuItems = menuItems.slice(0, 3).map(item => item.isim).join(', ');
+        return `RESTORAN: ${r.isim}\nKATEGORİ: ${r.kategori}\nBAZI MENÜ ÖĞELERİ: ${sampleMenuItems || 'Mevcut değil'}`;
+      }).join('\n\n====================\n\n');
+
+      systemMessageContentForAPI = `Sen Yuumi AI Chef adında, son derece yardımsever, dikkatli ve bilgili bir yemek öneri asistanısın. Senin görevin, kullanıcının yeme isteğine en uygun restoranları önermek.
+Konuşma tarzın samimi, arkadaş canlısı ve davetkar olmalı. ASLA fiyat bilgisi verme. Cevapların net ve doğrudan olsun.
+
+SANA SAĞLANAN BİLGİ KAYNAĞI (BAŞKA BİR YERE BAKMA, SADECE BUNU KULLAN):
+Aşağıda mevcut restoranlar ve kategorileri bulunmaktadır. Tüm cevaplarını ve önerilerini MUTLAKA ve SADECE bu listedeki bilgilere dayandır.
+${allRestaurantsOverview}
+
+ANA GÖREVLERİN VE DAVRANIŞ KURALLARIN:
+1.  **Restoran Önerisi:**
+    *   Kullanıcının isteğini (belirttiği malzemeler, yemek türleri, genel ruh hali vb.) dikkatlice analiz et.
+    *   Kullanıcının isteğine uygun olabilecek birkaç restoran öner. Önerirken restoranın kategorisini de belirtebilirsin.
+    *   Bu aşamada menü detaylarına çok fazla girme, sadece genel bir fikir ver. Kullanıcı bir restoran seçtikten sonra menü hakkında daha fazla bilgi verebilirsin.
+    *   Kullanıcı bir restoran adı belirtirse (örn: "Lezzet Durağı Döner'den bir şeyler bakalım"), bir sonraki mesajında o restorana odaklanacağını ve o restoranın menüsünü inceleyeceğini belirt. Bu durumda kullanıcıya "Harika, Lezzet Durağı Döner'in menüsüne göz atalım. Oradan ne yemek istersin?" gibi bir geçiş yap.
+
+ÖRNEK:
+Kullanıcı: Canım acı bir şeyler çekti.
+Sen: Acı lezzetler için Harput Kebap Salonu (Kebap) veya Acı Dünyası (Dünya Mutfağı) gibi yerlere bakabilirsin. Hangisiyle ilgilenirsin?
+
+GENEL İLKELER:
+*   Eğer bir restoran önerirsen ve kullanıcı olumlu yanıt verirse veya bir restoran seçerse, bir sonraki etkileşimde o restorana odaklanmak için durumu güncelle (Bu, setFocusedRestaurant çağrısı ile yapılır).
+*   Verilen restoran listesine %100 sadık kal.`;
+      // Genel sorgu aşamasında fonksiyon çağırmaya genellikle gerek yok.
+      // Kullanıcı "X restoranından Y'yi sepete ekle" gibi çok spesifik bir ifade kullanmadıkça araçlar gönderilmez.
+      // Bu durumu daha iyi yönetmek için kullanıcı mesajında "sepete ekle" gibi anahtar kelimeler kontrol edilebilir.
+      // Şimdilik genel sorguda araçları göndermiyoruz.
+      toolsToUseForAPI = undefined;
+      toolChoiceToUseForAPI = undefined;
+      console.log("Genel sorgu. Sistem mesajı güncellendi. Araçlar bu aşamada gönderilmiyor.");
+    }
+
+    const apiMessages = [
+      { role: "system", content: systemMessageContentForAPI },
+      ...messages.filter(msg => msg.role !== 'system'), 
+      newUserMessage
     ];
 
-    try {
-      let currentTurnMessages = [
-        { role: "system", content: systemMessageContent },
-        ...messages.filter(msg => msg.role !== 'system'),
-        userMessage
-      ];
+    console.log("API'ye gönderilen mesajlar:", JSON.stringify(apiMessages, null, 2));
 
-      let completion = await openai.chat.completions.create({
+    try {
+      const completionRequest = {
         model: "gpt-4o-mini",
-        messages: currentTurnMessages,
-        tools: tools,
-        tool_choice: "auto",
-        temperature: 0.6,
-      });
+        messages: apiMessages,
+        temperature: 0.3, 
+      };
+
+      if (toolsToUseForAPI && toolsToUseForAPI.length > 0) {
+        completionRequest.tools = toolsToUseForAPI;
+        if (toolChoiceToUseForAPI) { 
+            completionRequest.tool_choice = toolChoiceToUseForAPI;
+        }
+      }
+      
+      let completion = await openai.chat.completions.create(completionRequest);
 
       let assistantResponse = completion.choices[0].message;
 
@@ -163,44 +151,97 @@ GENEL İLKELER:
         const functionArgs = JSON.parse(toolCall.function.arguments);
         let functionResultContent = "";
 
-        if (functionName === "addItemToCart") {
-          const targetRestaurant = restaurants.find(r => (r.isim || r.name)?.toLowerCase() === functionArgs.restaurantName?.toLowerCase());
-          const menuItem = targetRestaurant?.items?.find(m => (m.isim || m.name)?.toLowerCase() === functionArgs.menuItemName?.toLowerCase()) ||
-                           targetRestaurant?.menu?.find(m => (m.isim || m.name)?.toLowerCase() === functionArgs.menuItemName?.toLowerCase());
+        console.log(`GPT fonksiyon çağırmak istiyor: ${functionName}`, functionArgs);
 
-          if (targetRestaurant && menuItem) {
-            console.log(`SİPARİŞ VERİLİYOR (mock): ${functionArgs.quantity || 1} adet ${functionArgs.menuItemName}, ${functionArgs.restaurantName} restoranından.`);
-            functionResultContent = `${functionArgs.quantity || 1} adet ${functionArgs.menuItemName}, ${functionArgs.restaurantName} restoranından başarıyla sepete eklendi! Başka bir isteğin var mı?`;
-          } else {
-            functionResultContent = `Üzgünüm, ${functionArgs.restaurantName} restoranında ${functionArgs.menuItemName} yemeğini bulamadım. Başka bir şey denemek ister misin?`;
+        if (functionName === "addItemToCart") {
+          console.log("addItemToCart fonksiyonu için GPT argümanları:", functionArgs);
+
+          let rn = functionArgs.restaurantName;
+          let mi = functionArgs.menuItemName;
+          // let lastFunctionResultContent = ""; // Bu satır zaten yukarıda veya başka bir kapsamda olabilir, eğer gereksizse kaldırıldı.
+
+          if (!rn || !mi) {
+            // Sistem mesajı GPT'yi bu durumu ele alması için yönlendirdi.
+            // GPT argümanları çıkaramazsa, kullanıcıya sorması beklenir.
+            // Eğer GPT sormazsa ve argümanlar hala eksikse, burada bir fallback mesajı oluşturabiliriz.
+            // Ancak ideal olan, GPT'nin sistem mesajına uyarak soru sormasıdır.
+            // Şimdilik, GPT'nin sistem mesajına göre hareket edeceğini varsayıyoruz.
+            // Eğer bu varsayım tutmazsa, buraya ek bir kontrol ve kullanıcıya direkt mesaj eklenebilir.
+            // Örneğin:
+            // functionResultContent = `Sepete eklemek için restoran ve yemek adını belirtmen gerekiyor. Örneğin: "Harput Kebap'tan Adana Kebap istiyorum."`;
+            // Bu durumda, aşağıdaki if (rn && mi) bloğu çalışmayacak ve GPT'nin bir sonraki yanıtı (soru sorması beklenir) işlenecektir.
+            // VEYA, GPT'nin sormasını beklemeden doğrudan bir hata mesajı gösterip işlemi durdurabiliriz:
+            //
+            // const assistantErrorMessage = { role: 'assistant', content: "Hangi restorandan hangi yemeği sepete eklemek istediğini anlayamadım. Lütfen belirtir misin?" };
+            // setMessages(prevMessages => [...prevMessages, assistantErrorMessage]);
+            // setIsLoading(false);
+            // return; // Erken çıkış
+            //
+            // Şimdilik, GPT'nin sistem mesajı doğrultusunda eksik bilgiyi sormasını bekleyeceğiz.
+            // Bu nedenle bu 'if' bloğunda doğrudan bir 'functionResultContent' ataması yapmıyoruz.
+            // Eğer GPT bu senaryoda hala yanlış davranırsa, bu bloğa geri dönüp daha katı bir kontrol ekleyebiliriz.
+            console.warn("addItemToCart için GPT tarafından restoran adı veya yemek adı çıkarılamadı. GPT'nin sorması bekleniyor.");
           }
+          
+          // Sadece rn ve mi varsa ve daha önce bir hata mesajı ayarlanmadıysa (functionResultContent boşsa) devam et
+          if (rn && mi && !functionResultContent) { 
+            const targetRestaurant = restaurants.find(r => (r.isim || r.name)?.toLowerCase() === rn.toLowerCase());
+            const menuItem = targetRestaurant?.menu?.find(m => (m.isim || m.name)?.toLowerCase() === mi.toLowerCase());
+
+            if (targetRestaurant && menuItem) {
+              if (onAddToCart) {
+                onAddToCart(targetRestaurant.id, targetRestaurant.isim, menuItem.id || menuItem.isim, menuItem.isim, functionArgs.quantity || 1);
+                functionResultContent = `${functionArgs.quantity || 1} adet ${menuItem.isim}, ${targetRestaurant.isim} restoranından başarıyla sepetine eklendi! Başka bir isteğin var mı? 😊`;
+              } else {
+                console.error("onAddToCart fonksiyonu AiChefBot'a prop olarak geçirilmemiş!");
+                functionResultContent = "Sepete ekleme fonksiyonunda bir sorun oluştu (onAddToCart prop eksik).";
+              }
+            } else {
+              // Bu durum sistem mesajı tarafından zaten ele alınmalı (GPT menüde yoksa belirtmeli).
+              // Ancak bir fallback olarak burada da bir mesaj olabilir.
+              functionResultContent = `Üzgünüm, "${rn}" restoranında "${mi}" yemeğini bulamadım. Menüde bu ürün görünmüyor. Lütfen menüdeki ürünlerden birini seçin.`;
+            }
+          }
+          // Eğer rn veya mi eksikse ve functionResultContent hala boşsa,
+          // GPT'nin kullanıcıya soru sorması beklenir. Bu durumda functionResultContent boş kalır
+          // ve bir sonraki turda GPT'nin yanıtı işlenir.
+          // Eğer yukarıda bir hata mesajı atanmışsa (örn: prop eksik), o kullanılır.
+          lastFunctionResultContent = functionResultContent; 
         } else if (functionName === "addMealToWeeklyPlan") {
           console.log(`HAFTALIK PLANA EKLENİYOR (mock): ${functionArgs.dayOfWeek} ${functionArgs.mealTime} için ${functionArgs.menuItemName}, ${functionArgs.restaurantName} restoranından.`);
           functionResultContent = `${functionArgs.menuItemName}, ${functionArgs.restaurantName} restoranından ${functionArgs.dayOfWeek} ${functionArgs.mealTime} planına eklendi. Başka bir arzun var mı?`;
         } else {
-          functionResultContent = `Bilinmeyen bir fonksiyon çağrısı: ${functionName}.`;
+          functionResultContent = `Bilinmeyen bir fonksiyon çağrısı aldım: ${functionName}.`;
         }
 
-        currentTurnMessages.push(assistantResponse);
-        currentTurnMessages.push({
-          tool_call_id: toolCall.id,
-          role: "tool",
-          name: functionName,
-          content: functionResultContent,
-        });
+        const messagesForNextTurn = [
+          ...apiMessages,
+          assistantResponse,
+          {
+            tool_call_id: toolCall.id,
+            role: "tool",
+            name: functionName,
+            content: functionResultContent,
+          }
+        ];
 
         completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
-          messages: currentTurnMessages,
+          messages: messagesForNextTurn,
         });
         assistantResponse = completion.choices[0].message;
       }
 
       if (assistantResponse.content) {
         setMessages(prevMessages => [...prevMessages, { role: 'assistant', content: assistantResponse.content.trim() }]);
-      } else if (!assistantResponse.tool_calls) {
-        console.warn("Assistant response has no content and no tool_calls:", assistantResponse);
-        setMessages(prevMessages => [...prevMessages, { role: 'assistant', content: 'Bir şeyler ters gitti, ama ne olduğunu anlayamadım. Tekrar deneyebilir misin?' }]);
+      } else if (lastFunctionResultContent) { // lastFunctionResultContent değişkenini burada kontrol et
+        setMessages(prevMessages => [...prevMessages, { role: 'assistant', content: lastFunctionResultContent }]);
+      } else if (assistantResponse.tool_calls && assistantResponse.tool_calls.length > 0) {
+        console.warn("GPT, fonksiyon sonucundan sonra tekrar fonksiyon çağırmak istedi:", assistantResponse.tool_calls);
+        setMessages(prevMessages => [...prevMessages, { role: 'assistant', content: 'İsteğini işledim, ancak devam etmek için ek bilgiye ihtiyacım olabilir veya bir şeyler tam istediğin gibi gitmedi.' }]);
+      } else if (!assistantResponse.content) {
+        console.warn("Asistan cevabında içerik yok ve tool_calls da yok:", assistantResponse);
+        setMessages(prevMessages => [...prevMessages, { role: 'assistant', content: 'Bir şeyler ters gitti ama ne olduğunu anlayamadım. Tekrar dener misin?' }]);
       }
 
     } catch (error) {

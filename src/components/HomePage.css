@@ -1319,6 +1319,12 @@ html, body {
   height: calc(100vh - 80px);
   overflow-y: auto;
   z-index: 100;
+  scrollbar-width: none; /* Firefox için */
+  -ms-overflow-style: none; /* IE ve Edge için */
+}
+
+.filter-sidebar::-webkit-scrollbar {
+  display: none; /* Webkit tabanlı tarayıcılar için */
 }
 
 .main-content {
@@ -1363,6 +1369,12 @@ html, body {
   max-height: 200px;
   overflow-y: auto;
   padding-right: 5px;
+  scrollbar-width: none; /* Firefox için */
+  -ms-overflow-style: none; /* IE ve Edge için */
+}
+
+.filter-options.scrollable::-webkit-scrollbar {
+  display: none; /* Webkit tabanlı tarayıcılar için */
 }
 
 .filter-options.expanded {
@@ -1381,9 +1393,6 @@ html, body {
   cursor: pointer;
 }
 
-.filter-option input {
-  margin-right: 10px;
-}
 
 .filter-label {
   font-size: 14px;
@@ -1511,77 +1520,83 @@ html, body {
 
 /* New dual-handle price range slider */
 .price-range-slider {
-  margin-bottom: 20px;
   position: relative;
-  padding-top: 10px;
-}
-
-.price-range-slider .slider-track {
   width: 100%;
-  height: 5px;
-  background-color: #ddd;
-  border-radius: 3px;
+  padding: 30px 0;
+  margin: 10px 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.slider-track {
   position: relative;
+  height: 4px;
+  width: 100%;
+  background-color: #e0e0e0;
+  border-radius: 2px;
 }
 
-.price-range-slider .slider-progress {
+.slider-progress {
   position: absolute;
-  height: 5px;
+  height: 4px;
   background-color: #00B2FF;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
-.price-range-slider .slider-handle {
-  width: 18px;
-  height: 18px;
+.slider-handle {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background-color: #ffffff;
   border: 2px solid #00B2FF;
   position: absolute;
-  top: -7px;
-  margin-left: -9px;
+  top: -8px;
+  margin-left: -10px;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 5;
   transition: transform 0.2s;
+  touch-action: none;
 }
 
-.price-range-slider .slider-handle:hover,
-.price-range-slider .slider-handle:active {
-  transform: scale(1.1);
+.slider-handle:hover,
+.slider-handle:active {
+  transform: scale(1.2);
+  z-index: 7;
 }
 
-.price-range-slider .slider-value {
+.slider-value {
   position: absolute;
   top: -35px;
-  margin-left: -22px;
-  padding: 3px 8px;
-  background-color: #00B2FF;
+  transform: translateX(-50%);
+  background: #00B2FF;
   color: white;
-  font-size: 12px;
+  padding: 4px 8px;
   border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
   opacity: 0;
   transition: opacity 0.2s;
-  z-index: 3;
-  min-width: 40px;
-  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.price-range-slider .slider-value::after {
+.slider-value::after {
   content: '';
   position: absolute;
-  bottom: -4px;
+  bottom: -5px;
   left: 50%;
   transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid #00B2FF;
+  border-width: 5px 5px 0;
+  border-style: solid;
+  border-color: #00B2FF transparent transparent;
 }
 
-.price-range-slider .slider-handle:hover .slider-value,
-.price-range-slider .slider-handle:active .slider-value {
+.slider-handle:hover .slider-value,
+.slider-handle:active .slider-value,
+.slider-handle.dragging .slider-value {
   opacity: 1;
 }
 
@@ -1589,19 +1604,80 @@ html, body {
   display: flex;
   justify-content: space-between;
   margin-top: 10px;
-  font-size: 13px;
-  color: #666;
+  font-size: 14px;
+  color: #555;
 }
 
-.price-range-limits span {
-  position: relative;
+/* Range inputları düzeltme */
+.price-range-slider input[type="range"] {
+  position: absolute;
+  top: 0;
+  left: 0; 
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  -webkit-appearance: none;
+  appearance: none; /* Standart özellik eklendi */
+  pointer-events: all;
+  cursor: pointer;
+  z-index: 6;
 }
 
-.slider-container {
-  position: relative;
-  background-color: #f5f5f5;
+/* Sol ve sağ slider kaydırma stili */
+.min-price-slider,
+.max-price-slider {
+  height: 100% !important;
+  cursor: ew-resize !important;
+  touch-action: none !important;
+  -webkit-tap-highlight-color: transparent;
+  background: transparent;
+}
+
+/* Restoranların ortalanması için */
+.restaurant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* No results gösterimini ortala */
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  background-color: #f9f9f9;
   border-radius: 8px;
-  padding: 20px;
+  padding: 40px 20px;
+  margin: 20px auto;
+  max-width: 500px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.no-results p {
+  margin: 10px 0;
+  color: #555;
+  font-size: 16px;
+}
+
+.no-results p:first-child {
+  font-weight: bold;
+  color: #333;
+  font-size: 18px;
+}
+
+/* Filtre debug bilgisi için merkezi gösterim */
+.filter-debug-info {
+  grid-column: 1 / -1;
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 10px 20px;
+  margin: 0 auto 20px auto;
+  font-size: 14px;
+  color: #555;
+  max-width: 500px;
+  text-align: center;
 }
 
 /* Ensure white background */
@@ -3240,3 +3316,170 @@ button[data-action="cancel"] {
 .register-button:hover {
   background-color: #0095d9;
 }
+
+/* Filter Options Styles */
+.filter-option input[type="radio"],
+.filter-option input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.filter-option .filter-label {
+  position: relative;
+  padding-left: 30px; /* Make space for custom control */
+  cursor: pointer;
+  display: inline-flex; /* Align icon and text */
+  align-items: center;
+  min-height: 22px; /* Ensure consistent height */
+}
+
+/* Base style for custom controls */
+.filter-option .filter-label::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 18px;
+  width: 18px;
+  background-color: #fff;
+  border: 2px solid #ccc;
+  box-sizing: border-box;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom Radio Button */
+.filter-option input[type="radio"] + .filter-label::before {
+  border-radius: 50%; /* Circular shape for radio */
+}
+
+/* Radio Button - Checked State (Border) */
+.filter-option input[type="radio"]:checked + .filter-label::before {
+  border-color: #00B2FF;
+}
+
+/* Radio Button - Inner Dot (Appear when checked) */
+.filter-option .filter-label::after { /* This will be styled for both radio and checkbox when checked */
+  content: "";
+  position: absolute;
+  left: 5px; /* Position for radio dot */
+  top: 50%;
+  transform: translateY(-50%) scale(0); /* Initially hidden */
+  transition: all 0.2s ease-in-out;
+  box-sizing: border-box;
+}
+
+.filter-option input[type="radio"]:checked + .filter-label::after {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #00B2FF;
+  transform: translateY(-50%) scale(1); /* Show dot */
+  left: 5px; /* (18px outer - 8px inner) / 2 = 5px from left edge of ::before */
+}
+
+/* Custom Checkbox */
+.filter-option input[type="checkbox"] + .filter-label::before {
+  border-radius: 4px; /* Slightly rounded square for checkbox */
+}
+
+/* Checkbox - Checked State (Background and Border) */
+.filter-option input[type="checkbox"]:checked + .filter-label::before {
+  background-color: #00B2FF;
+  border-color: #00B2FF;
+}
+
+/* Checkbox - Checkmark (Appear when checked) */
+.filter-option input[type="checkbox"]:checked + .filter-label::after {
+  /* CSS Checkmark */
+  left: 6px; /* Adjust for checkmark positioning within 18x18 box */
+  top: calc(50% - 3px); /* Fine-tune vertical alignment */
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-50%) rotate(45deg) scale(1); /* Show checkmark */
+}
+
+/* Focus Visible Styles for Accessibility */
+.filter-option input[type="radio"]:focus-visible + .filter-label::before,
+.filter-option input[type="checkbox"]:focus-visible + .filter-label::before {
+  box-shadow: 0 0 0 2px rgba(0, 178, 255, 0.4);
+}
+
+/* Adjust original filter-option to work with new custom controls */
+.filter-option {
+  display: flex; /* Already there, good */
+  align-items: center; /* Already there, good */
+  /* Remove margin from the input as it's hidden, rely on label padding */
+}
+
+/* Price filter buttons */
+.price-filter-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.filter-btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+
+.apply-btn {
+  background-color: #00B2FF;
+  color: white;
+}
+
+.apply-btn:hover {
+  background-color: #0095d9;
+}
+
+.apply-btn.active {
+  background-color: #0095d9;
+  position: relative;
+}
+
+/* Aktif filtre işareti - TİK İŞARETİ KALDIRILDI */
+.apply-btn.active::after {
+  display: none;
+}
+
+.reset-btn {
+  background-color: #f5f5f5;
+  color: #555;
+}
+
+.reset-btn:hover {
+  background-color: #e0e0e0;
+}
+
+/* Filtre uygulama animasyonu - ANİMASYONLAR KALDIRILDI */
+/* .filter-applied ve .filter-reset kuralları kaldırıldı çünkü boştular */
+
+/* Animasyon keyframe'leri kaldırıldı */
+/*
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); background-color: #00dd65; }
+  100% { transform: scale(1); }
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(5px); }
+  50% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+*/
+

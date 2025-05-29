@@ -3,8 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './HomePage.css';
 import './RestaurantGridStyles.css';
 import './WeeklyPlan.css';
+import './TimePickerFix.css';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getDistance } from '../utils/locationUtils'; // Konum yardımcı fonksiyonunu import et
+
+// Ortalama sürüş hızı (km/saat)
+const AVERAGE_DRIVING_SPEED_KMH = 30;
 
 export default function WeeklyPlan() {
   const [activeDayIndex, setActiveDayIndex] = useState(0);
@@ -15,32 +20,42 @@ export default function WeeklyPlan() {
   const [loading, setLoading] = useState(true);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [timePickerConfig, setTimePickerConfig] = useState({
-    planId: null,
     hours: 12,
-    minutes: 0
+    minutes: 0,
+    planId: null
   });
-  // Sepet durumu için yeni state
+  const [showCartActions, setShowCartActions] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
   const [showCart, setShowCart] = useState(false);
   const [cart, setCart] = useState({});
-  const [showCartActions, setShowCartActions] = useState(false);
-  const [headerCart, setHeaderCart] = useState([]);  // Add this new state for the header cart
+  const [headerCart, setHeaderCart] = useState([]);
+  
+  // Konum state'leri
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
 
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Initialize active day to today (day 0) when component mounts
+  useEffect(() => {
+    // Make sure we start with today (index 0) when component first loads
+    if (activeDayIndex !== 0) {
+      setActiveDayIndex(0);
+    }
+  }, []); // Empty dependency array - runs only once on mount
+
   // Load weekly plan from localStorage and cart from sessionStorage on component mount
   useEffect(() => {
-    // Load weekly plan from localStorage
-    const savedPlan = localStorage.getItem('yuumiWeeklyPlan');
-    if (savedPlan) {
-      try {
-        const parsedPlan = JSON.parse(savedPlan);
-        console.log("Loaded weekly plan from localStorage");
-        setWeeklyPlan(parsedPlan);
-      } catch (error) {
-        console.error('Error parsing saved weekly plan:', error);
-      }
-    }
+    // Clear old weekly plan and generate new one with correct dates
+    console.log("Clearing old weekly plan and generating new one");
+    localStorage.removeItem('yuumiWeeklyPlan');
+    
+    // Generate fresh weekly plan with correct dates
+    const freshPlan = generateWeeklyPlan();
+    setWeeklyPlan(freshPlan);
+    localStorage.setItem('yuumiWeeklyPlan', JSON.stringify(freshPlan));
     
     // Load global cart from sessionStorage
     const savedCart = sessionStorage.getItem('yuumiCart');
@@ -137,8 +152,6 @@ export default function WeeklyPlan() {
                 id: doc.id,
                 ...doc.data()
               }));
-            } else if (restaurantData.menuItems && Array.isArray(restaurantData.menuItems)) {
-              restaurantData.items = restaurantData.menuItems;
             }
           } catch (error) {
             console.error(`Error fetching menu for restaurant ${restaurantDoc.id}:`, error);
@@ -155,14 +168,78 @@ export default function WeeklyPlan() {
       }
     };
 
-    fetchRestaurants();
+    if (showRestaurantSelection) {
+      fetchRestaurants();
+    }
+  }, [showRestaurantSelection]);
+
+  // Konum alma fonksiyonu
+  const fetchUserLocation = () => {
+    setIsLoadingLocation(true);
+    setLocationError(null);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCurrentLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          console.log("WeeklyPlan: Kullanıcı konumu alındı:", position.coords);
+          setIsLoadingLocation(false);
+        },
+        (error) => {
+          console.error("WeeklyPlan: Konum alınırken hata oluştu:", error);
+          let message = "Konum bilgisi alınamadı.";
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              message = "Konum izni reddedildi. Teslimat sürelerini doğru hesaplamak için lütfen izin verin.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              message = "Konum bilgisi mevcut değil.";
+              break;
+            case error.TIMEOUT:
+              message = "Konum alma isteği zaman aşımına uğradı.";
+              break;
+            default:
+              message = "Bilinmeyen bir hata oluştu.";
+              break;
+          }
+          setLocationError(message);
+          setIsLoadingLocation(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      const message = "Tarayıcınız konum servisini desteklemiyor.";
+      console.error(message);
+      setLocationError(message);
+      setIsLoadingLocation(false);
+    }
+  };
+
+  // Konum alma useEffect'i
+  useEffect(() => {
+    fetchUserLocation();
   }, []);
 
   // Generate a weekly plan starting from today
   function generateWeeklyPlan() {
     const daysOfWeek = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    // Gerçek bugünün tarihini kullan
     const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday, etc.
+    
+    console.log('Today is:', today.toLocaleDateString('tr-TR', { 
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long',
+      timeZone: 'Europe/Istanbul'
+    }));
+    
+    console.log('Today\'s day of week (0=Sunday):', today.getDay());
     
     const weekPlan = [];
     
@@ -174,19 +251,29 @@ export default function WeeklyPlan() {
       // Get current time for today's default time value, use rounded minutes
       let defaultTime;
       if (i === 0) { // Today
-        const currentHour = today.getHours();
-        const currentMinute = today.getMinutes(); // Use actual minutes
-        defaultTime = `${currentHour.toString().padStart(2, '0')}:${
-          currentMinute.toString().padStart(2, '0') // Ensure minutes are always two digits
+        const now = new Date(); // Gerçek şu anki saat
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        // Round to next 5 minutes if we're planning for now
+        const roundedMinute = Math.ceil(currentMinute / 5) * 5;
+        const adjustedHour = roundedMinute >= 60 ? currentHour + 1 : currentHour;
+        const finalMinute = roundedMinute >= 60 ? 0 : roundedMinute;
+        
+        defaultTime = `${adjustedHour.toString().padStart(2, '0')}:${
+          finalMinute.toString().padStart(2, '0')
         }`;
       } else {
         defaultTime = '12:00'; // Default for future days
       }
       
-      weekPlan.push({
+      const dayData = {
         id: i + 1,
         name: daysOfWeek[dayNumber],
-        date: planDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }),
+        date: planDate.toLocaleDateString('tr-TR', { 
+          day: 'numeric', 
+          month: 'long',
+          timeZone: 'Europe/Istanbul' 
+        }),
         completed: false,
         plans: [
           {
@@ -196,9 +283,13 @@ export default function WeeklyPlan() {
             selections: []
           }
         ]
-      });
+      };
+      
+      console.log(`Day ${i}: ${dayData.name} - ${dayData.date} (dayNumber: ${dayNumber})`);
+      weekPlan.push(dayData);
     }
     
+    console.log('Generated weekly plan:', weekPlan);
     return weekPlan;
   }
 
@@ -256,12 +347,24 @@ export default function WeeklyPlan() {
     const newPlanNumber = currentDay.plans.length + 1;
     
     // Get current time for the default time value
-    const now = new Date();
+    const now = new Date(); // Gerçek şu anki saat
     const currentHour = now.getHours();
-    const currentMinute = Math.ceil(now.getMinutes() / 5) * 5; // Round to nearest 5 minutes
-    const defaultTime = `${currentHour.toString().padStart(2, '0')}:${
-      currentMinute >= 60 ? '00' : currentMinute.toString().padStart(2, '0')
-    }`;
+    const currentMinute = now.getMinutes();
+    
+    let defaultTime;
+    if (activeDayIndex === 0) { // If it's today
+      // Round to next 5 minutes
+      const roundedMinute = Math.ceil(currentMinute / 5) * 5;
+      const adjustedHour = roundedMinute >= 60 ? currentHour + 1 : currentHour;
+      const finalMinute = roundedMinute >= 60 ? 0 : roundedMinute;
+      
+      defaultTime = `${adjustedHour.toString().padStart(2, '0')}:${
+        finalMinute.toString().padStart(2, '0')
+      }`;
+    } else {
+      // For future days, use a reasonable default
+      defaultTime = '12:00';
+    }
     
     const newPlanId = `plan-${activeDayIndex}-${newPlanNumber}`;
     
@@ -316,10 +419,30 @@ export default function WeeklyPlan() {
     
     const [hours, minutes] = plan.time.split(':').map(Number);
     
+    // If it's today and the selected time is in the past, use current time
+    const now = new Date(); // Gerçek şu anki saat
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    let adjustedHours = hours;
+    let adjustedMinutes = minutes;
+    
+    // If it's today (activeDayIndex === 0) and the plan time is in the past
+    if (activeDayIndex === 0) {
+      if (hours < currentHour || (hours === currentHour && minutes < currentMinute)) {
+        adjustedHours = currentHour;
+        adjustedMinutes = Math.ceil(currentMinute / 5) * 5; // Round to next 5 minutes
+        if (adjustedMinutes >= 60) {
+          adjustedHours += 1;
+          adjustedMinutes = 0;
+        }
+      }
+    }
+    
     setTimePickerConfig({
       planId,
-      hours,
-      minutes
+      hours: adjustedHours,
+      minutes: adjustedMinutes
     });
     
     setShowTimePicker(true);
@@ -361,12 +484,12 @@ export default function WeeklyPlan() {
   const isTimeValid = (hours, minutes) => {
     if (activeDayIndex > 0) return true; // Future days are always valid
     
-    const now = new Date();
+    const now = new Date(); // Gerçek şu anki saat
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
     if (hours > currentHour) return true;
-    if (hours === currentHour && minutes >= currentMinute) return true;
+    if (hours === currentHour && minutes > currentMinute) return true;
     
     return false;
   };
@@ -953,7 +1076,7 @@ export default function WeeklyPlan() {
 
   // Generate time picker wheel items
   const generateTimeOptions = (type) => {
-    const now = new Date();
+    const now = new Date(); // Gerçek şu anki saat
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
@@ -977,7 +1100,7 @@ export default function WeeklyPlan() {
       const options = [];
       for (let i = 0; i < 60; i += 5) {
         // If it's today and current hour, only show minutes from current minute onwards
-        if (activeDayIndex === 0 && timePickerConfig.hours === currentHour && i < currentMinute) continue;
+        if (activeDayIndex === 0 && timePickerConfig.hours === currentHour && i <= currentMinute) continue;
         options.push(
           <div 
             key={i} 
@@ -1254,8 +1377,20 @@ export default function WeeklyPlan() {
   // Loading state
   if (loading && showRestaurantSelection) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner">Restoranlar yükleniyor...</div>
+      <div className="weekly-plan-container">
+        <div className="restaurant-selection-view">
+          <div className="restaurant-selection-header">
+            <button className="back-btn" onClick={closeRestaurantSelection}>
+              ← Geri
+            </button>
+            <div className="selection-header-content">
+              <h2 className="selection-day-title">Restoran Seç</h2>
+            </div>
+          </div>
+          <div className="loading-container">
+            <div className="loading-spinner">Restoranlar yükleniyor...</div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -1292,73 +1427,134 @@ export default function WeeklyPlan() {
             </div>
           </div>
           
-          <div className="restaurant-grid">
-            {restaurants.map(restaurant => {
-              const topItems = restaurant.items.slice(0, 3);
-              return (
-                <div 
-                  key={restaurant.id} 
-                  className="restaurant-card"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    viewRestaurantDetails(restaurant.id);
-                  }}
-                >
-                  <div className="restaurant-header">
-                    <img 
-                      src={restaurant.image || restaurant.logoUrl || 'https://via.placeholder.com/100'} 
-                      alt={restaurant.name || restaurant.isim} 
-                      className="restaurant-image"
-                    />
+          <div className="restaurant-grid-container">
+            <div className="restaurant-grid">
+              {restaurants.map(restaurant => {
+                const topItems = restaurant.items.slice(0, 3);
+                return (
+                  <div 
+                    key={restaurant.id} 
+                    className="restaurant-card"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      viewRestaurantDetails(restaurant.id);
+                    }}
+                  >
+                    <div className="restaurant-header">
+                      <img 
+                        src={restaurant.image || restaurant.logoUrl || 'https://via.placeholder.com/100'} 
+                        alt={restaurant.name || restaurant.isim} 
+                        className="restaurant-image"
+                      />
+                    </div>
+                    
+                    <div className="restaurant-name-section">
+                      <h3 className="restaurant-name">{restaurant.name || restaurant.isim}</h3>
+                      <div className="restaurant-category">{restaurant.category || restaurant.kategori}</div>
+                    </div>
+                    
+                    <div className="restaurant-details">
+                      <div className="restaurant-hours">
+                        {restaurant.calismaSaatleri || restaurant.calismaSaatleri1 || "12:00 - 22:00"}
+                      </div>
+                      <div className="restaurant-address">
+                        {restaurant.address || restaurant.adres}
+                      </div>
+                    </div>
+                    
+                    <div className="restaurant-meta-row">
+                      <div className="restaurant-rating">
+                        <span className="star">★</span> {restaurant.rating || restaurant.puan || '4.5'} 
+                        <span className="rating-count">({restaurant.reviewCount || '0'})</span>
+                      </div>
+                      <div className="delivery-info">
+                        <span className="delivery-time">
+                          {(() => {
+                            // Dinamik teslimat süresi hesaplama (RestaurantGrid'deki gibi)
+                            const getDeliveryTime = (restaurant, index) => {
+                              let distance = Infinity;
+                              let travelTimeMinutes = 0;
+                              let totalEstimatedTimeMinutes = Infinity;
+
+                              // Her restoran için farklı base süreler
+                              const baseDeliveryTimes = [15, 20, 25, 30, 35, 40, 45];
+                              const baseTime = baseDeliveryTimes[index % baseDeliveryTimes.length];
+                              
+                              // Restorana göre özel süre ayarlamaları
+                              let adjustedBaseTime = baseTime;
+                              const name = restaurant.name || restaurant.isim || '';
+                              
+                              if (name.includes('Fast') || name.includes('Büfe')) {
+                                adjustedBaseTime = Math.max(15, baseTime - 10); // Fast food daha hızlı
+                              } else if (name.includes('Pizza')) {
+                                adjustedBaseTime = Math.max(20, baseTime - 5); // Pizza orta hızlı
+                              } else if (name.includes('Kebap') || name.includes('Ocakbaşı')) {
+                                adjustedBaseTime = baseTime + 10; // Kebap daha yavaş
+                              } else if (name.includes('Çiğ Köfte')) {
+                                adjustedBaseTime = Math.max(10, baseTime - 15); // Çiğ köfte çok hızlı
+                              } else if (name.includes('Mantı') || name.includes('Ev Yemekleri')) {
+                                adjustedBaseTime = baseTime + 15; // Ev yemekleri daha yavaş
+                              }
+
+                              // Gerçek konum varsa mesafe hesapla
+                              if (currentLocation && restaurant.konum && 
+                                  typeof restaurant.konum.latitude === 'number' && 
+                                  typeof restaurant.konum.longitude === 'number') {
+                                distance = getDistance(
+                                  currentLocation.latitude,
+                                  currentLocation.longitude,
+                                  restaurant.konum.latitude,
+                                  restaurant.konum.longitude
+                                );
+                                if (distance !== Infinity) {
+                                  travelTimeMinutes = (distance / AVERAGE_DRIVING_SPEED_KMH) * 60;
+                                  totalEstimatedTimeMinutes = adjustedBaseTime + travelTimeMinutes;
+                                } 
+                              } else {
+                                // Konum yoksa sabit süre ver ama her restoran farklı olsun
+                                totalEstimatedTimeMinutes = adjustedBaseTime;
+                              }
+
+                              // Özel restoran ayarlamaları
+                              if (restaurant.isim === "Harpit Kebap Salonu" || restaurant.isim === "Ocakbaşı Keyfi") {
+                                totalEstimatedTimeMinutes += 10;
+                              }
+                              
+                              return Math.round(totalEstimatedTimeMinutes);
+                            };
+                            
+                            const deliveryTime = getDeliveryTime(restaurant, restaurants.indexOf(restaurant));
+                            const endTime = deliveryTime + 5; // 5 dakika aralık
+                            return `${deliveryTime}-${endTime} dk`;
+                          })()}
+                        </span>
+                        <span className="delivery-fee">Ücretsiz</span>
+                      </div>
+                    </div>
+                    
+                    {/* Simple action buttons for the most popular items */}
+                    {topItems.length > 0 && (
+                      <div className="quick-add-section">
+                        {topItems.map(item => (
+                          <button 
+                            key={item.id} 
+                            className="quick-add-btn"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation(); // Prevent click from bubbling to restaurant card
+                              addItemToCart(restaurant.id, item.id);
+                            }}
+                          >
+                            {(item.name || item.isim).substring(0, 20)}{(item.name || item.isim).length > 20 ? '...' : ''} Ekle
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="restaurant-name-section">
-                    <h3 className="restaurant-name">{restaurant.name || restaurant.isim}</h3>
-                    <div className="restaurant-category">{restaurant.category || restaurant.kategori}</div>
-                  </div>
-                  
-                  <div className="restaurant-details">
-                    <div className="restaurant-hours">
-                      {restaurant.calismaSaatleri || restaurant.calismaSaatleri1 || "12:00 - 22:00"}
-                    </div>
-                    <div className="restaurant-address">
-                      {restaurant.address || restaurant.adres}
-                    </div>
-                  </div>
-                  
-                  <div className="restaurant-meta-row">
-                    <div className="restaurant-rating">
-                      <span className="star">★</span> {restaurant.rating || restaurant.puan || '4.5'} 
-                      <span className="rating-count">({restaurant.reviewCount || '0'})</span>
-                    </div>
-                    <div className="delivery-info">
-                      <span className="delivery-time">{restaurant.deliveryTime || restaurant.teslimatSuresi || '25-40 dk'}</span>
-                      <span className="delivery-fee">Ücretsiz</span>
-                    </div>
-                  </div>
-                  
-                  {/* Simple action buttons for the most popular items */}
-                  {topItems.length > 0 && (
-                    <div className="quick-add-section">
-                      {topItems.map(item => (
-                        <button 
-                          key={item.id} 
-                          className="quick-add-btn"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation(); // Prevent click from bubbling to restaurant card
-                            addItemToCart(restaurant.id, item.id);
-                          }}
-                        >
-                          {(item.name || item.isim).substring(0, 20)}{(item.name || item.isim).length > 20 ? '...' : ''} Ekle
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
           
           {/* Sepet aksiyon butonu */}
@@ -1547,9 +1743,9 @@ export default function WeeklyPlan() {
                 İptal
               </button>
               <button 
-                className="time-confirm-btn"
+                className={`time-confirm-btn ${!isTimeValid(timePickerConfig.hours, timePickerConfig.minutes) ? 'disabled' : ''}`}
                 onClick={confirmTimeSelection}
-                // disabled={!isTimeValid(timePickerConfig.hours, timePickerConfig.minutes)} // Temporarily remove disabled for testing time
+                disabled={!isTimeValid(timePickerConfig.hours, timePickerConfig.minutes)}
               >
                 Onayla
               </button>
